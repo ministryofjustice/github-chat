@@ -53,6 +53,12 @@ vintage = get_vintage_from_str(latest_collection_nm)
 # Startup ends ============================================================
 
 app_ui = ui.page_fillable(
+
+    ui.head_content(
+        ui.tags.link(
+            rel="icon", type="image/svg", href="favicon.svg"
+        ),
+    ),
     ui.include_css(app_dir / "www/styles.css"),
     ui.h1("RAG with MoJ GitHub"),
     ui.markdown(
@@ -186,4 +192,5 @@ def server(input, output, session):
         response = f"**Outcome:** {meta_resp['message']['content']}\n***\n**Results:**\n{repo_results}"
         await chat.append_message(response)
 
-app = App(app_ui, server)
+app = App(app_ui, server, static_assets=app_dir / "www")
+# app = App(app_ui, server)
