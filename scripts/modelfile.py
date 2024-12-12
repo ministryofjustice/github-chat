@@ -3,8 +3,6 @@ from ollama import create
 from scripts.constants import SYS_PROMPT
 from scripts.pipeline_config import LLM, TEMP
 
-# SYS_PROMPT = "You are a helpful assistant speaking in the tone of Super Mario."
-
 
 def create_model(llm:str=LLM, temp:str=TEMP, prompt:str=SYS_PROMPT):
     # carriage returns break ollama.create

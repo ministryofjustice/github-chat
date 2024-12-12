@@ -1,0 +1,45 @@
+h1, h2, h3, h4, h5, h6, span {
+    color: #3d1265;
+}
+
+a {
+    color: #ff007c;
+}
+
+hr {
+    border: 2px solid #3d1265;
+}
+
+body {
+    background-color: #f1f2f5;
+}
+
+input[type="number"] {
+    border-color: #ff007c;
+}
+
+/* .card {
+    border: 1px solid #ff007c;
+} */
+
+.collapse-icon {
+    color: #ff007c;
+}
+
+.nav-link.active {
+    color: white !important;
+    background-color: #ff007c !important;
+}
+
+.nav-link {
+    color: #ff007c !important;
+}
+
+textarea.form-control.textarea-autoresize {
+    outline: 1px solid #ff007c;
+}
+
+/* .bi-arrow-up-circle-fill {
+    fill: #ff007c;
+} */
+
