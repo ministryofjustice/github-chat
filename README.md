@@ -1,5 +1,5 @@
 <!-- Badges start -->
-![Repo status badge](https://badgen.net/static/Repo Status/In Development/orange?icon=github)
+![Repo status badge](https://badgen.net/static/Repo%20Status/In%20Development/orange?icon=github)
 <!-- Badges end -->
 
 # GitHub Chat
