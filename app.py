@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 
 import chromadb
+from faicons import icon_svg
 import ollama
 from pyprojroot import here
 from shiny import App, ui
@@ -60,7 +61,26 @@ app_ui = ui.page_fillable(
         ),
     ),
     ui.include_css(app_dir / "www/styles.css"),
-    ui.h1("RAG with MoJ GitHub"),
+
+
+
+    ui.div(
+        ui.img(
+            src="moJxlogo.png",
+            width="100rem",
+            style="padding-left:0.2rem;padding-top:0.6rem;float:left;"
+            ),
+
+        ui.h1("RAG with MoJ GitHub", style="padding-top:0.2rem;text-align:center;"),
+        id="header"
+    ),
+
+    ui.panel_well(
+        ui.h2("This is a prototype", {"style": "font-size:22px;"}),        
+        """All information presented is for testing and feedback purposes
+        only. Large Language Models can make mistakes. Check important
+        information."""
+    ),
     ui.markdown(
         """Code repositories in ministryofjustice and
         moj-analytical-services GitHub organisations are included."""),
@@ -95,14 +115,23 @@ app_ui = ui.page_fillable(
                 ui.markdown("* Embeddings calculated with <a href=https://www.nomic.ai/blog/posts/nomic-embed-text-v1 target='_blank'>nomic-embed-text</a>, an open-source embeddings model with a comparable context window to leading edge proprietary embeddings models."),
                 ui.markdown(f"* Retrieval model {LLM} from Meta's Open Source <a href=https://www.llama.com/ target='_blank'>Llama series</a>."),
                 ui.hr(),
+                ui.div(
+                    ui.a(
+                        icon_svg("github", width="25px", fill="currentColor"),
+                        href="https://github.com/ministryofjustice/github-chat",
+                        target="_blank",
+                    ),
+                    style="float:right;",
+                ),
                 ui.h2("Known Issues", {"style": "font-size:25px;"}),
+
                 ui.markdown("* Queries are slow, even with the most performant Meta `llama3.2:1b` model. This is due to design decisions in an effort to mitigate hallucinations. To reduce wait time, reduce the value of n Results."),
                 ui.markdown("* Repos in the `moj-analytical-platform` may mistakenly show repo descriptions and README content as 'None'. This is likely to be a flaw in the ingestion process regarding GitHub API credentials rather than LLM hallucinations."),
                 ui.markdown("* Queries such as 'machine learning' tend to produce results with higher relevance than queries like 'Are there any repos about machine learning?'. At a cost to performance, I would like to explore using an LLM for entity extraction of search keywords in the user's query, by using the <a href='https://dottxt-ai.github.io/outlines/latest/welcome/' target='_blank'>Python `outlines` library</a>."),
             ),
         ),
     )), 
-        
+
     fillable_mobile=True,
 
 
