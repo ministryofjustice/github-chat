@@ -1,0 +1,12 @@
+ai_nexus_backend @ git+https://github.com/ministryofjustice/rd-service-catalogue@431d734bf4a0f643d3423d5c0372f9fb66fa5af8 # feature branch pulls in repo ID & fixes get_all_org_repo_metadata
+chromadb
+matplotlib
+nomic
+ollama
+openai
+pandas
+pyprojroot
+python-dotenv
+requests
+sentence_transformers
+tiktoken
