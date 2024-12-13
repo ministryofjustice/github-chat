@@ -19,8 +19,8 @@ def ingest():
 
     # get repo lists ------------------------------------------------------
 
-    org1 = github_client.get_org_repos(org_nms[0])
-    org2 = github_client.get_org_repos(org_nms[1])
+    org1 = github_client.get_org_repos(org_nms[0], public_only=True)
+    org2 = github_client.get_org_repos(org_nms[1], public_only=True)
 
     # append the topics from each repo ------------------------------------
 
@@ -34,11 +34,7 @@ def ingest():
         repo_nms=org2["name"],
         org_nm=org_nms[1],
     )
-
-    [i for i, nm in enumerate(org2["name"]) if nm == "judicial_demand"]
-    org2.reset_index(drop=True).iloc[1325, :]
-    # this one is an internal archive
-
+    
     # munge tables --------------------------------------------------------
 
     repo_metadata = pd.concat([org1, org2], ignore_index=True)
