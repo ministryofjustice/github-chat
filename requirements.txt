@@ -1,4 +1,4 @@
-ai_nexus_backend @ git+https://github.com/ministryofjustice/rd-service-catalogue@431d734bf4a0f643d3423d5c0372f9fb66fa5af8 # feature branch pulls in repo ID & fixes get_all_org_repo_metadata
+ai_nexus_backend @ git+https://github.com/ministryofjustice/rd-service-catalogue@f79e87595e6df51247b26be41a1c0b5dfcd311ac # v0.3.0
 chromadb
 faicons
 ollama
