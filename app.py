@@ -172,8 +172,6 @@ def server(input, output, session):
                 "No results were shown, increase distance threshold"
                 )
 
-
-
         # for each result, extract properties and inject into template
         ui_resps = []  
         for ind, res in enumerate(results["documents"][0]):
@@ -182,12 +180,20 @@ def server(input, output, session):
             desc = desc_pat.findall(res)
             readme = readme_pat.findall(res)
             dist = results["distances"][0][ind]
+
             meta_dict = {
+                "org_nm": results["metadatas"][0][ind].get("org_nm"),
                 "repo_nm": nm[0] if nm else None,
                 "html_url": url[0] if url else None,
                 "repo_desc": desc[0] if desc else None,
+                "is_private": results["metadatas"][0][ind].get("is_private"),
+                "is_archived": results["metadatas"][0][ind].get("is_archived"),
+                "programming_language": results["metadatas"][0][ind].get("programming_language"),
+                "updated_at": results["metadatas"][0][ind].get("updated_at"),
                 "distance": dist, 
             }
+
+            logging.info(f"Metadatas:\n{meta_dict}")
 
             repo_content = {
                 "role": "user",

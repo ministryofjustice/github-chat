@@ -10,14 +10,24 @@ def format_results(
     model_summary:str,
     template:str=RESPONSE_TEMPLATE
     ) -> str:
+    org = db_result.get("org_nm")
     nm = db_result.get("repo_nm")
     desc = db_result.get("repo_desc")
     url = db_result.get("html_url")
+    priv = db_result.get("is_private")
+    arch = db_result.get("is_archived")
+    upd_at = db_result.get("updated_at")
+    prog_lang = db_result.get("programming_language")
     dist = db_result.get("distance")
     return template.format(
+        org_nm = org,
         repo_nm=nm,
         repo_desc=desc,
         url=url,
+        is_private=priv,
+        is_archived=arch,
+        updated_at=upd_at,
+        programming_language=prog_lang,
         distance=dist,
         model_summary=model_summary
         )

@@ -16,9 +16,14 @@ Repo details: ```{repo_deets}```
 """
 
 RESPONSE_TEMPLATE = """
+Organisation: {org_nm}\n
 Repo Name: {repo_nm}\n
 Repo Description: {repo_desc}\n
 Repo URL: <a href="{url}">{repo_nm}</a>\n
+Is Private: {is_private}\n
+Is Archived: {is_archived}\n
+Updated At: {updated_at}\n
+Programming Language: {programming_language}\n
 Distance: {distance}\n
 AI Summary: {model_summary}
 """
