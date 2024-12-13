@@ -1,3 +1,4 @@
+import datetime
 import logging
 from pathlib import Path
 import re
@@ -61,8 +62,6 @@ app_ui = ui.page_fillable(
         ),
     ),
     ui.include_css(app_dir / "www/styles.css"),
-
-
 
     ui.div(
         ui.img(
@@ -148,6 +147,7 @@ def server(input, output, session):
     @chat.on_user_submit
     async def respond():
         """A callback to run when the user submits a message."""
+        current_time = datetime.datetime.now()
         # Get the user's input
         usr_prompt = sanitise_string(chat.user_input())
         logging.info("User submitted prompt =============================")
@@ -181,6 +181,13 @@ def server(input, output, session):
             readme = readme_pat.findall(res)
             dist = results["distances"][0][ind]
 
+            logging.info(f"All available metadatas:\n{results['metadatas'][0][ind]}")
+            upd_at = results["metadatas"][0][ind].get("updated_at")
+            dt_object = datetime.datetime.fromtimestamp(upd_at)
+            days_ago = (current_time - dt_object).days
+            formatted_date = dt_object.strftime("%A, %d %B, %Y at %H:%M")
+            date_out = f"{formatted_date} ({days_ago} days ago)."
+
             meta_dict = {
                 "org_nm": results["metadatas"][0][ind].get("org_nm"),
                 "repo_nm": nm[0] if nm else None,
@@ -189,7 +196,7 @@ def server(input, output, session):
                 "is_private": results["metadatas"][0][ind].get("is_private"),
                 "is_archived": results["metadatas"][0][ind].get("is_archived"),
                 "programming_language": results["metadatas"][0][ind].get("programming_language"),
-                "updated_at": results["metadatas"][0][ind].get("updated_at"),
+                "updated_at": date_out,
                 "distance": dist, 
             }
 
