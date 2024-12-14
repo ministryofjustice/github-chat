@@ -31,6 +31,14 @@ input[type="number"] {
     background-color: #ff007c !important;
 }
 
+.nav.nav-tabs {
+    position: -webkit-sticky; /* For Safari */
+    position: sticky;
+    top: -25px; /* Adjust this value as needed */
+    z-index: 1000; /* Ensure it stays above other content */
+    background-color: white; /* Ensure it doesn't overlap with other content */
+}
+
 .nav-link {
     color: #ff007c !important;
 }
