@@ -4,8 +4,10 @@ from pathlib import Path
 import re
 
 import chromadb
+import dotenv
 from faicons import icon_svg
 import ollama
+import openai
 from pyprojroot import here
 from shiny import App, ui
 
@@ -14,6 +16,7 @@ from scripts.modelfile import create_model
 from scripts.pipeline_config import (
     EMBEDDINGS_MODEL,
     LLM,
+    META_LLM,
     VECTOR_STORE_PTH,
 )
 from scripts.string_utils import (
@@ -24,6 +27,7 @@ from scripts.string_utils import (
 )
 
 # Before ==================================================================
+secrets = dotenv.dotenv_values(here(".env"))
 app_dir = Path(__file__).parent
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s",
@@ -46,6 +50,8 @@ for mod in [EMBEDDINGS_MODEL, LLM]:
 
 # default prompt
 create_model()
+
+openai_client = openai.AsyncOpenAI(api_key=secrets["OPENAI_KEY"])
 
 chroma_client = chromadb.PersistentClient(path=str(VECTOR_STORE_PTH))
 latest_collection_nm = max(chroma_client.list_collections()).name
@@ -81,7 +87,7 @@ app_ui = ui.page_fillable(
         information."""
     ),
     ui.markdown(
-        """Code repositories in ministryofjustice and
+        """**Public code** repositories in ministryofjustice and
         moj-analytical-services GitHub organisations are included."""),
     ui.p(f"Data last updated: {vintage}"),
     ui.card(  
@@ -227,11 +233,14 @@ def server(input, output, session):
         summary_prompt = format_meta_prompt(
             usr_prompt=usr_prompt, res=repo_results
             )
-        meta_resp = ollama.chat(
-            model=LLM,
-            messages=[{"role": "user", "content": summary_prompt}]
+        
+
+        meta_resp = await openai_client.chat.completions.create(
+                model=META_LLM,
+                messages=[{"role": "user", "content": summary_prompt}]
             )
-        response = f"**Outcome:** {meta_resp['message']['content']}\n***\n**Results:**\n{repo_results}"
+
+        response = f"**Outcome:** {meta_resp.choices[0].message.content}\n***\n**Results:**\n{repo_results}"
         await chat.append_message(response)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
