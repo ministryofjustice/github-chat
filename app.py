@@ -11,12 +11,11 @@ import openai
 from pyprojroot import here
 from shiny import App, ui
 
-from scripts.constants import SUMMARY_PROMPT, WELCOME_MSG
-from scripts.modelfile import create_model
+from scripts.constants import SUMMARY_PROMPT, SYS_PROMPT, WELCOME_MSG
 from scripts.pipeline_config import (
     EMBEDDINGS_MODEL,
-    LLM,
     META_LLM,
+    REPO_LLM,
     VECTOR_STORE_PTH,
 )
 from scripts.string_utils import (
@@ -34,7 +33,8 @@ logging.basicConfig(
     handlers=[logging.FileHandler(here("logs/app.log"))],
     )
 
-stream = list()
+system_prompt = {"role": "system", "content": SYS_PROMPT}
+stream = [system_prompt]
 stream.append({"role": "assistant", "content": WELCOME_MSG})
 
 nm_pat = re.compile(r"Name:\s*([^,]+)", re.IGNORECASE)
@@ -44,15 +44,10 @@ readme_pat = re.compile(r"README: (.*?)([^']+)", re.IGNORECASE)
 
 resp = ollama.list()
 found_models = [mod["model"] for mod in resp["models"]]
-for mod in [EMBEDDINGS_MODEL, LLM]:
-    if mod not in found_models:
-        ollama.pull(mod)
-
-# default prompt
-create_model()
+if EMBEDDINGS_MODEL not in found_models:
+    ollama.pull(EMBEDDINGS_MODEL)
 
 openai_client = openai.AsyncOpenAI(api_key=secrets["OPENAI_KEY"])
-
 chroma_client = chromadb.PersistentClient(path=str(VECTOR_STORE_PTH))
 latest_collection_nm = max(chroma_client.list_collections()).name
 collection = chroma_client.get_collection(name=latest_collection_nm)
@@ -111,14 +106,13 @@ app_ui = ui.page_fillable(
             bg="#f0e3ff"
             ),  
         ui.navset_tab(
-            ui.nav_panel(f"Chat with {LLM}", ui.chat_ui(id="chat", placeholder="Enter some keywords", ),),
+            ui.nav_panel(f"Chat with {META_LLM}", ui.chat_ui(id="chat", placeholder="Enter some keywords", ),),
             ui.nav_panel(
                 "More details",
                 ui.h2("Citations", {"style": "font-size:25px;"}),
                 ui.markdown("* Embeddings storage with <a href=https://docs.trychroma.com/ target='_blank'>Chromadb</a>, an open-source vector store. Embeddings were created with the default normalised <a href='https://docs.trychroma.com/guides#changing-the-distance-function' target='_blank'>Root Mean Squared Error function</a>."),
                 ui.markdown("* Local LLMs handled with <a href=https://ollama.com/ target='_blank'>ollama</a>."),
                 ui.markdown("* Embeddings calculated with <a href=https://www.nomic.ai/blog/posts/nomic-embed-text-v1 target='_blank'>nomic-embed-text</a>, an open-source embeddings model with a comparable context window to leading edge proprietary embeddings models."),
-                ui.markdown(f"* Retrieval model {LLM} from Meta's Open Source <a href=https://www.llama.com/ target='_blank'>Llama series</a>."),
                 ui.hr(),
                 ui.div(
                     ui.a(
@@ -213,11 +207,10 @@ def server(input, output, session):
                 "content": SUMMARY_PROMPT.format(repo_deets=res)
                 }
             stream.append(repo_content)
-            model_resp = ollama.chat(
-                model=LLM,
-                messages=stream,
-            )
-            ai_summary = model_resp["message"]["content"]
+            model_resp = await openai_client.chat.completions.create(
+                model=REPO_LLM, messages=stream
+                )
+            ai_summary = model_resp.choices[0].message.content
             logging.info(f"Repo {url} ai summary:\n{ai_summary}")
             # rm summary to avoid growing context for next iter
             stream.pop()
@@ -228,20 +221,18 @@ def server(input, output, session):
                 )
             ui_resps.append(ui_resp)
 
-        
         repo_results = "***".join(ui_resps)
         summary_prompt = format_meta_prompt(
             usr_prompt=usr_prompt, res=repo_results
-            )
-        
-
+            )        
         meta_resp = await openai_client.chat.completions.create(
                 model=META_LLM,
-                messages=[{"role": "user", "content": summary_prompt}]
+                messages=[
+                    system_prompt,
+                    {"role": "user", "content": summary_prompt},
+                    ]
             )
-
         response = f"**Outcome:** {meta_resp.choices[0].message.content}\n***\n**Results:**\n{repo_results}"
         await chat.append_message(response)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
-# app = App(app_ui, server)
