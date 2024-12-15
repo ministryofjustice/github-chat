@@ -1,7 +1,8 @@
 ai_nexus_backend @ git+https://github.com/ministryofjustice/rd-service-catalogue@f79e87595e6df51247b26be41a1c0b5dfcd311ac # v0.3.0
 chromadb
 faicons
-ollama
+nomic
+openai
 pyprojroot
 python-dotenv
 shiny==1.2.1
