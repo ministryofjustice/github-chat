@@ -6,7 +6,7 @@ import re
 import chromadb
 import dotenv
 from faicons import icon_svg
-import ollama
+from nomic import embed, login
 import openai
 from pyprojroot import here
 from shiny import App, ui
@@ -42,11 +42,7 @@ url_pat = re.compile(r"url:\s*([^,]+)", re.IGNORECASE)
 desc_pat = re.compile(r"Description: (.*?)(?=\sREADME:)", re.IGNORECASE)
 readme_pat = re.compile(r"README: (.*?)([^']+)", re.IGNORECASE)
 
-resp = ollama.list()
-found_models = [mod["model"] for mod in resp["models"]]
-if EMBEDDINGS_MODEL not in found_models:
-    ollama.pull(EMBEDDINGS_MODEL)
-
+login(token=secrets["NOMIC_KEY"])
 openai_client = openai.AsyncOpenAI(api_key=secrets["OPENAI_KEY"])
 chroma_client = chromadb.PersistentClient(path=str(VECTOR_STORE_PTH))
 latest_collection_nm = max(chroma_client.list_collections()).name
@@ -100,7 +96,7 @@ app_ui = ui.page_fillable(
                 label="Distance Threshold",
                 value=1.0,
                 min=0.0,
-                max=1.0,
+                max=2.0,
                 step=0.1,
                 ),
             bg="#f0e3ff"
@@ -130,10 +126,7 @@ app_ui = ui.page_fillable(
             ),
         ),
     )), 
-
     fillable_mobile=True,
-
-
 )
 
 
@@ -152,10 +145,18 @@ def server(input, output, session):
         usr_prompt = sanitise_string(chat.user_input())
         logging.info("User submitted prompt =============================")
         logging.info(f"Santised user input: {usr_prompt}")
-        query_embeddings = ollama.embed(
-            model=EMBEDDINGS_MODEL, input=f"search_query: {usr_prompt}")
+
+        # embed with nomic
+        query_embeddings = embed.text(
+            texts=[usr_prompt],
+            model=EMBEDDINGS_MODEL,
+            task_type="search_query",
+        )
         results = collection.query(
-            query_embeddings=query_embeddings.embeddings, n_results=input.selected_n())
+            query_embeddings=query_embeddings.get("embeddings"),
+            n_results=input.selected_n()
+            )
+
         # filter out any results that are above the distance threshold
         logging.info("Vector Store queried ==============================")
         logging.info(f"Search results: {results}")
@@ -184,6 +185,7 @@ def server(input, output, session):
             logging.info(f"All available metadatas:\n{results['metadatas'][0][ind]}")
             upd_at = results["metadatas"][0][ind].get("updated_at")
             dt_object = datetime.datetime.fromtimestamp(upd_at)
+
             days_ago = (current_time - dt_object).days
             formatted_date = dt_object.strftime("%A, %d %B, %Y at %H:%M")
             date_out = f"{formatted_date} ({days_ago} days ago)."
