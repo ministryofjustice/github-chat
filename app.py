@@ -12,6 +12,7 @@ from pyprojroot import here
 from shiny import App, ui
 
 from scripts.constants import SUMMARY_PROMPT, SYS_PROMPT, WELCOME_MSG
+from scripts.moderations import check_moderation
 from scripts.pipeline_config import (
     EMBEDDINGS_MODEL,
     META_LLM,
@@ -222,103 +223,122 @@ def server(input, output, session):
         usr_prompt = sanitise_string(chat.user_input())
         logging.info("User submitted prompt =============================")
         logging.info(f"Santised user input: {usr_prompt}")
-
-        # embed with nomic
-        query_embeddings = embed.text(
-            texts=[usr_prompt],
-            model=EMBEDDINGS_MODEL,
-            task_type="search_query",
-        )
-        results = collection.query(
-            query_embeddings=query_embeddings.get("embeddings"),
-            n_results=input.selected_n()
+        logging.info("Moderating prompt ================================")
+        flagged_prompt = await check_moderation(
+            prompt=usr_prompt, openai_client=openai_client
             )
-
-        # filter out any results that are above the distance threshold
-        logging.info("Vector Store queried ==============================")
-        logging.info(f"Search results: {results}")
-        logging.info("Filtering results =================================")
-        rem_inds = [
-            i for i, dist in enumerate(results["distances"][0])
-            if dist > input.dist_thresh()
-        ]
-        # delete results over selected threshold
-        for i in rem_inds[::-1]:
-            # careful with removing as adjusts index
-            del results["documents"][0][i]
-        
-        # handle cases where distance threshold is too low
-        if len(results["documents"][0]) == 0:
-            ui.notification_show(
-                "No results were shown, increase distance threshold"
+        logging.info(f"Moderation outcome: {flagged_prompt}")
+        if flagged_prompt != usr_prompt:
+            await chat.append_message({
+                "role": "assistant",
+                "content": ("Your message may violate OpenAI's usage "
+                f"policy, categories: {flagged_prompt}. Please rephrase "
+                "your input and try again."),
+            })
+            logging.info("Discarding moderated prompt ===================")
+            logging.info(f"Discarded prompt: {usr_prompt}")
+            del usr_prompt
+        else:
+            # prompt has passed moderation, embed with nomic Atlas
+            query_embeddings = embed.text(
+                texts=[usr_prompt],
+                model=EMBEDDINGS_MODEL,
+                task_type="search_query",
+            )
+            results = collection.query(
+                query_embeddings=query_embeddings.get("embeddings"),
+                n_results=input.selected_n()
                 )
 
-        # for each result, extract properties and inject into template
-        ui_resps = []  
-        for ind, res in enumerate(results["documents"][0]):
-            nm = nm_pat.findall(res)
-            url = url_pat.findall(res)
-            desc = desc_pat.findall(res)
-            readme = readme_pat.findall(res)
-            dist = results["distances"][0][ind]
+            # filter out any results that are above the distance threshold
+            logging.info("Vector Store queried ==========================")
+            logging.info(f"Search results: {results}")
+            logging.info("Filtering results =============================")
+            rem_inds = [
+                i for i, dist in enumerate(results["distances"][0])
+                if dist > input.dist_thresh()
+            ]
+            # delete results over selected threshold
+            for i in rem_inds[::-1]:
+                # careful with removing as adjusts index
+                del results["documents"][0][i]
+            
+            # handle cases where distance threshold is too low
+            if len(results["documents"][0]) == 0:
+                ui.notification_show(
+                    "No results were shown, increase distance threshold"
+                    )
 
-            logging.info(f"All available metadatas:\n{results['metadatas'][0][ind]}")
-            upd_at = results["metadatas"][0][ind].get("updated_at")
-            dt_object = datetime.datetime.fromtimestamp(upd_at)
+            # for each result, extract properties and inject into template
+            ui_resps = []  
+            for ind, res in enumerate(results["documents"][0]):
+                nm = nm_pat.findall(res)
+                url = url_pat.findall(res)
+                desc = desc_pat.findall(res)
+                readme = readme_pat.findall(res)
+                dist = results["distances"][0][ind]
 
-            days_ago = (current_time - dt_object).days
-            formatted_date = dt_object.strftime("%A, %d %B, %Y at %H:%M")
-            date_out = f"{formatted_date} ({days_ago} days ago)."
+                logging.info(
+                    f"Available metas:\n{results['metadatas'][0][ind]}"
+                )
+                upd_at = results["metadatas"][0][ind].get("updated_at")
+                dt_object = datetime.datetime.fromtimestamp(upd_at)
 
-            meta_dict = {
-                "org_nm": results["metadatas"][0][ind].get("org_nm"),
-                "repo_nm": nm[0] if nm else None,
-                "html_url": url[0] if url else None,
-                "repo_desc": desc[0] if desc else None,
-                "is_private": results["metadatas"][0][ind].get("is_private"),
-                "is_archived": results["metadatas"][0][ind].get("is_archived"),
-                "programming_language": results["metadatas"][0][ind].get("programming_language"),
-                "updated_at": date_out,
-                "distance": dist, 
-            }
+                days_ago = (current_time - dt_object).days
+                formatted_date = dt_object.strftime(
+                    "%A, %d %B, %Y at %H:%M"
+                )
+                date_out = f"{formatted_date} ({days_ago} days ago)."
 
-            logging.info(f"Metadatas:\n{meta_dict}")
-
-            repo_content = {
-                "role": "user",
-                "content": SUMMARY_PROMPT.format(repo_deets=res)
+                meta_dict = {
+                    "org_nm": results["metadatas"][0][ind].get("org_nm"),
+                    "repo_nm": nm[0] if nm else None,
+                    "html_url": url[0] if url else None,
+                    "repo_desc": desc[0] if desc else None,
+                    "is_private": results["metadatas"][0][ind].get("is_private"),
+                    "is_archived": results["metadatas"][0][ind].get("is_archived"),
+                    "programming_language": results["metadatas"][0][ind].get("programming_language"),
+                    "updated_at": date_out,
+                    "distance": dist, 
                 }
-            stream.append(repo_content)
-            model_resp = await openai_client.chat.completions.create(
-                model=REPO_LLM, messages=stream
-                )
-            ai_summary = model_resp.choices[0].message.content
-            logging.info(f"Repo {url} ai summary:\n{ai_summary}")
-            # rm summary to avoid growing context for next iter
-            stream.pop()
 
-            ui_resp = format_results(
-                db_result=meta_dict,
-                model_summary=ai_summary,
-                )
-            ui_resps.append(ui_resp)
+                logging.info(f"Metadatas:\n{meta_dict}")
 
-        repo_results = "***".join(ui_resps)
-        summary_prompt = format_meta_prompt(
-            usr_prompt=usr_prompt, res=repo_results
-            )        
-        meta_resp = await openai_client.chat.completions.create(
-                model=META_LLM,
-                messages=[
-                    system_prompt,
-                    {"role": "user", "content": summary_prompt},
-                    ]
+                repo_content = {
+                    "role": "user",
+                    "content": SUMMARY_PROMPT.format(repo_deets=res)
+                    }
+                stream.append(repo_content)
+                model_resp = await openai_client.chat.completions.create(
+                    model=REPO_LLM, messages=stream
+                    )
+                ai_summary = model_resp.choices[0].message.content
+                logging.info(f"Repo {url} ai summary:\n{ai_summary}")
+                # rm summary to avoid growing context for next iter
+                stream.pop()
+
+                ui_resp = format_results(
+                    db_result=meta_dict,
+                    model_summary=ai_summary,
+                    )
+                ui_resps.append(ui_resp)
+
+            repo_results = "***".join(ui_resps)
+            summary_prompt = format_meta_prompt(
+                usr_prompt=usr_prompt, res=repo_results
+                )        
+            meta_resp = await openai_client.chat.completions.create(
+                    model=META_LLM,
+                    messages=[
+                        system_prompt,
+                        {"role": "user", "content": summary_prompt},
+                        ]
+                )
+            summ_resp = meta_resp.choices[0].message.content
+            response = (
+                f"**Outcome:** {summ_resp}\n***" +
+                f"\n**Results:**\n{repo_results}"
             )
-        summ_resp = meta_resp.choices[0].message.content
-        response = (
-            f"**Outcome:** {summ_resp}\n***" +
-            f"\n**Results:**\n{repo_results}"
-        )
-        await chat.append_message(response)
+            await chat.append_message(response)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
