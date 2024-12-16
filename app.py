@@ -5,13 +5,14 @@ import re
 
 import chromadb
 import dotenv
-from faicons import icon_svg
 from nomic import embed, login
 import openai
 from pyprojroot import here
 from shiny import App, ui
 
 from scripts.constants import SUMMARY_PROMPT, SYS_PROMPT, WELCOME_MSG
+from scripts.moderations import check_moderation
+from scripts.custom_components import more_info_tab, feedback_tab
 from scripts.pipeline_config import (
     EMBEDDINGS_MODEL,
     META_LLM,
@@ -111,96 +112,9 @@ app_ui = ui.page_fillable(
                 f"Chat with {META_LLM}",
                 ui.chat_ui(id="chat", placeholder="Enter some keywords"),
             ),
-            ui.nav_panel(
-                "More details",
-                ui.h2("Citations", {"style": "font-size:25px;"}),
-                ui.markdown(
-                    f"""* Embeddings calculated with
-                    <a href=https://www.nomic.ai/blog/posts/nomic-embed-text-v1 target=_blank>{EMBEDDINGS_MODEL}</a>,
-                    an open-source embeddings model with a comparable
-                    context window to leading edge proprietary embeddings
-                    models."""
-                ),
-                ui.markdown(
-                    """* Embeddings storage with
-                    <a href=https://docs.trychroma.com/ target=_blank>Chromadb</a>,
-                    an open-source vector store. Embeddings were created
-                    with the default normalised
-                    <a href='https://docs.trychroma.com/guides#changing-the-distance-function' target=_blank>Root Mean Squared Error function</a>."""
-                ),
-                ui.markdown(
-                    """* Retrieval with OpenAI's
-                    <a href=https://openai.com/index/hello-gpt-4o/ target=_blank>GPT-4o series</a>."""
-                ),
-                ui.hr(),
-                ui.h2("Known Issues", {"style": "font-size:25px;"}),
-                ui.markdown(
-                    """* Queries are slow. This is due to design decisions
-                    in an effort to mitigate hallucinations. To reduce wait
-                    time, reduce the value of n Results. Response times
-                    could be improved by pre-generating AI repo summaries.
-                    """
-                ),
-                ui.markdown(
-                    """* Repos in the `moj-analytical-platform` may
-                    mistakenly show repo metadata as 'None'. This is likely
-                    to be a flaw in the ingestion process regarding GitHub
-                    API credentials rather than LLM hallucinations.
-                    Alternative approaches to authorisation or use of
-                    <a href=https://docs.github.com/en/graphql target=_blank>GitHub GraphQL API</a>
-                    could resolve this issue."""
-                ),
-                ui.markdown(
-                    """* Queries such as 'machine learning' tend to produce
-                    results with higher relevance than queries like 'Are
-                    there any repos about machine learning?'. At a cost to
-                    performance, entity extraction of search keywords in
-                    the user's query could be explored using the
-                    <a href='https://dottxt-ai.github.io/outlines/latest/welcome/' target=_blank>Python `outlines` library</a>.
-                """),
-                ui.markdown(
-                    """* This application contains public repo metadata
-                    only. We are currently examining demand for an internal
-                    application that would include all MoJ repo metadata.
-                    """
-                ),
-            ),
-            ui.nav_panel(
-                "Feedback",
-                ui.div(
-                    ui.a(
-                        icon_svg("github", width="25px", fill="currentColor"),
-                        href="https://github.com/ministryofjustice/github-chat",
-                        target="_blank",
-                        aria_label="GitHub Repository"
-                    ),
-                    style="float:right;",
-                ),
-                ui.markdown("Provide feedback in the following ways: "),
-                ui.markdown(
-                    """* If you find an issue or have a feature request,
-                    please
-                    <a href=https://github.com/ministryofjustice/github-chat/issues target=_blank>open a GitHub Issue</a>
-                    """
-                ),
-                ui.markdown(
-                    """* If you'd like to ask a question about the
-                    application, head over to our
-                    <a href=https://github.com/ministryofjustice/github-chat/discussions target=_blank>GitHub Discussions page</a>.
-                    """
-                ),
-                ui.markdown(
-                    """* A list of
-                    <a href='https://github.com/ministryofjustice/github-chat/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22selected%20for%20development%22' target=_blank>list of issues selected for development</a>
-                    is available on GitHub."""
-                ),
-                ui.markdown(
-                    """* An overview of the changes to this application can
-                    be viewed in the
-                    <a href=https://github.com/ministryofjustice/github-chat/blob/main/CHANGELOG.md target=_blank>changelog document</a>.
-                    """
-                ),
-            ),
+            # custom ui components:
+            more_info_tab(),
+            feedback_tab(),
         ),
     )), 
     fillable_mobile=True,
@@ -222,103 +136,122 @@ def server(input, output, session):
         usr_prompt = sanitise_string(chat.user_input())
         logging.info("User submitted prompt =============================")
         logging.info(f"Santised user input: {usr_prompt}")
-
-        # embed with nomic
-        query_embeddings = embed.text(
-            texts=[usr_prompt],
-            model=EMBEDDINGS_MODEL,
-            task_type="search_query",
-        )
-        results = collection.query(
-            query_embeddings=query_embeddings.get("embeddings"),
-            n_results=input.selected_n()
+        logging.info("Moderating prompt =================================")
+        flagged_prompt = await check_moderation(
+            prompt=usr_prompt, openai_client=openai_client
             )
-
-        # filter out any results that are above the distance threshold
-        logging.info("Vector Store queried ==============================")
-        logging.info(f"Search results: {results}")
-        logging.info("Filtering results =================================")
-        rem_inds = [
-            i for i, dist in enumerate(results["distances"][0])
-            if dist > input.dist_thresh()
-        ]
-        # delete results over selected threshold
-        for i in rem_inds[::-1]:
-            # careful with removing as adjusts index
-            del results["documents"][0][i]
-        
-        # handle cases where distance threshold is too low
-        if len(results["documents"][0]) == 0:
-            ui.notification_show(
-                "No results were shown, increase distance threshold"
+        logging.info(f"Moderation outcome: {flagged_prompt}")
+        if flagged_prompt != usr_prompt:
+            await chat.append_message({
+                "role": "assistant",
+                "content": ("Your message may violate OpenAI's usage "
+                f"policy, categories: {flagged_prompt}. Please rephrase "
+                "your input and try again."),
+            })
+            logging.info("Discarding moderated prompt ===================")
+            logging.info(f"Discarded prompt: {usr_prompt}")
+            del usr_prompt
+        else:
+            # prompt has passed moderation, embed with nomic Atlas
+            query_embeddings = embed.text(
+                texts=[usr_prompt],
+                model=EMBEDDINGS_MODEL,
+                task_type="search_query",
+            )
+            results = collection.query(
+                query_embeddings=query_embeddings.get("embeddings"),
+                n_results=input.selected_n()
                 )
 
-        # for each result, extract properties and inject into template
-        ui_resps = []  
-        for ind, res in enumerate(results["documents"][0]):
-            nm = nm_pat.findall(res)
-            url = url_pat.findall(res)
-            desc = desc_pat.findall(res)
-            readme = readme_pat.findall(res)
-            dist = results["distances"][0][ind]
+            # filter out any results that are above the distance threshold
+            logging.info("Vector Store queried ==========================")
+            logging.info(f"Search results: {results}")
+            logging.info("Filtering results =============================")
+            rem_inds = [
+                i for i, dist in enumerate(results["distances"][0])
+                if dist > input.dist_thresh()
+            ]
+            # delete results over selected threshold
+            for i in rem_inds[::-1]:
+                # careful with removing as adjusts index
+                del results["documents"][0][i]
+            
+            # handle cases where distance threshold is too low
+            if len(results["documents"][0]) == 0:
+                ui.notification_show(
+                    "No results were shown, increase distance threshold"
+                    )
 
-            logging.info(f"All available metadatas:\n{results['metadatas'][0][ind]}")
-            upd_at = results["metadatas"][0][ind].get("updated_at")
-            dt_object = datetime.datetime.fromtimestamp(upd_at)
+            # for each result, extract properties and inject into template
+            ui_resps = []  
+            for ind, res in enumerate(results["documents"][0]):
+                nm = nm_pat.findall(res)
+                url = url_pat.findall(res)
+                desc = desc_pat.findall(res)
+                readme = readme_pat.findall(res)
+                dist = results["distances"][0][ind]
 
-            days_ago = (current_time - dt_object).days
-            formatted_date = dt_object.strftime("%A, %d %B, %Y at %H:%M")
-            date_out = f"{formatted_date} ({days_ago} days ago)."
+                logging.info(
+                    f"Available metas:\n{results['metadatas'][0][ind]}"
+                )
+                upd_at = results["metadatas"][0][ind].get("updated_at")
+                dt_object = datetime.datetime.fromtimestamp(upd_at)
 
-            meta_dict = {
-                "org_nm": results["metadatas"][0][ind].get("org_nm"),
-                "repo_nm": nm[0] if nm else None,
-                "html_url": url[0] if url else None,
-                "repo_desc": desc[0] if desc else None,
-                "is_private": results["metadatas"][0][ind].get("is_private"),
-                "is_archived": results["metadatas"][0][ind].get("is_archived"),
-                "programming_language": results["metadatas"][0][ind].get("programming_language"),
-                "updated_at": date_out,
-                "distance": dist, 
-            }
+                days_ago = (current_time - dt_object).days
+                formatted_date = dt_object.strftime(
+                    "%A, %d %B, %Y at %H:%M"
+                )
+                date_out = f"{formatted_date} ({days_ago} days ago)."
 
-            logging.info(f"Metadatas:\n{meta_dict}")
-
-            repo_content = {
-                "role": "user",
-                "content": SUMMARY_PROMPT.format(repo_deets=res)
+                meta_dict = {
+                    "org_nm": results["metadatas"][0][ind].get("org_nm"),
+                    "repo_nm": nm[0] if nm else None,
+                    "html_url": url[0] if url else None,
+                    "repo_desc": desc[0] if desc else None,
+                    "is_private": results["metadatas"][0][ind].get("is_private"),
+                    "is_archived": results["metadatas"][0][ind].get("is_archived"),
+                    "programming_language": results["metadatas"][0][ind].get("programming_language"),
+                    "updated_at": date_out,
+                    "distance": dist, 
                 }
-            stream.append(repo_content)
-            model_resp = await openai_client.chat.completions.create(
-                model=REPO_LLM, messages=stream
-                )
-            ai_summary = model_resp.choices[0].message.content
-            logging.info(f"Repo {url} ai summary:\n{ai_summary}")
-            # rm summary to avoid growing context for next iter
-            stream.pop()
 
-            ui_resp = format_results(
-                db_result=meta_dict,
-                model_summary=ai_summary,
-                )
-            ui_resps.append(ui_resp)
+                logging.info(f"Metadatas:\n{meta_dict}")
 
-        repo_results = "***".join(ui_resps)
-        summary_prompt = format_meta_prompt(
-            usr_prompt=usr_prompt, res=repo_results
-            )        
-        meta_resp = await openai_client.chat.completions.create(
-                model=META_LLM,
-                messages=[
-                    system_prompt,
-                    {"role": "user", "content": summary_prompt},
-                    ]
+                repo_content = {
+                    "role": "user",
+                    "content": SUMMARY_PROMPT.format(repo_deets=res)
+                    }
+                stream.append(repo_content)
+                model_resp = await openai_client.chat.completions.create(
+                    model=REPO_LLM, messages=stream
+                    )
+                ai_summary = model_resp.choices[0].message.content
+                logging.info(f"Repo {url} ai summary:\n{ai_summary}")
+                # rm summary to avoid growing context for next iter
+                stream.pop()
+
+                ui_resp = format_results(
+                    db_result=meta_dict,
+                    model_summary=ai_summary,
+                    )
+                ui_resps.append(ui_resp)
+
+            repo_results = "***".join(ui_resps)
+            summary_prompt = format_meta_prompt(
+                usr_prompt=usr_prompt, res=repo_results
+                )        
+            meta_resp = await openai_client.chat.completions.create(
+                    model=META_LLM,
+                    messages=[
+                        system_prompt,
+                        {"role": "user", "content": summary_prompt},
+                        ]
+                )
+            summ_resp = meta_resp.choices[0].message.content
+            response = (
+                f"**Outcome:** {summ_resp}\n***" +
+                f"\n**Results:**\n{repo_results}"
             )
-        summ_resp = meta_resp.choices[0].message.content
-        response = (
-            f"**Outcome:** {summ_resp}\n***" +
-            f"\n**Results:**\n{repo_results}"
-        )
-        await chat.append_message(response)
+            await chat.append_message(response)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
