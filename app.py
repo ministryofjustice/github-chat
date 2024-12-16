@@ -57,17 +57,19 @@ app_ui = ui.page_fillable(
         ui.tags.link(
             rel="icon", type="image/svg", href="favicon.svg"
         ),
+        ui.include_css(app_dir / "www/styles.css"),
     ),
-    ui.include_css(app_dir / "www/styles.css"),
-
+    ui.tags.head(ui.HTML("<html lang='en'>")),
+    ui.panel_title("MoJ GitHub Chat - Chat With MoJ GitHub Repositories"),
     ui.div(
         ui.img(
             src="moJxlogo.png",
             width="100rem",
-            style="padding-left:0.2rem;padding-top:0.6rem;float:left;"
+            style="padding-left:0.2rem;padding-top:0.6rem;float:left;",
+            alt="MoJx Logo",
             ),
 
-        ui.h1("RAG with MoJ GitHub", style="padding-top:0.2rem;text-align:center;"),
+        ui.h1("Welcome to MoJ GitHub Chat", style="padding-top:0.2rem;text-align:center;"),
         id="header"
     ),
 
@@ -102,7 +104,10 @@ app_ui = ui.page_fillable(
             bg="#f0e3ff"
             ),  
         ui.navset_tab(
-            ui.nav_panel(f"Chat with {META_LLM}", ui.chat_ui(id="chat", placeholder="Enter some keywords", ),),
+            ui.nav_panel(
+                f"Chat with {META_LLM}",
+                ui.chat_ui(id="chat", placeholder="Enter some keywords"),
+            ),
             ui.nav_panel(
                 "More details",
                 ui.h2("Citations", {"style": "font-size:25px;"}),
@@ -123,6 +128,7 @@ app_ui = ui.page_fillable(
                         icon_svg("github", width="25px", fill="currentColor"),
                         href="https://github.com/ministryofjustice/github-chat",
                         target="_blank",
+                        aria_label="GitHub Repository"
                     ),
                     style="float:right;",
                 ),
