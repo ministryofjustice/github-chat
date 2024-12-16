@@ -1,3 +1,6 @@
+# deployment directory for shinyapps.io
+rsconnect-python
+
 data
 logs
 outputs
