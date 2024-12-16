@@ -314,7 +314,11 @@ def server(input, output, session):
                     {"role": "user", "content": summary_prompt},
                     ]
             )
-        response = f"**Outcome:** {meta_resp.choices[0].message.content}\n***\n**Results:**\n{repo_results}"
+        summ_resp = meta_resp.choices[0].message.content
+        response = (
+            f"**Outcome:** {summ_resp}\n***" +
+            f"\n**Results:**\n{repo_results}"
+        )
         await chat.append_message(response)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
