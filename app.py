@@ -60,7 +60,7 @@ app_ui = ui.page_fillable(
         ui.include_css(app_dir / "www/styles.css"),
     ),
     ui.tags.head(ui.HTML("<html lang='en'>")),
-    ui.panel_title("MoJ GitHub Chat - Chat With MoJ GitHub Repositories"),
+    ui.panel_title("MoJ GitHub Chat"),
     ui.div(
         ui.img(
             src="moJxlogo.png",
@@ -70,7 +70,7 @@ app_ui = ui.page_fillable(
             ),
 
         ui.h1(
-            "Welcome to MoJ GitHub Chat",
+            "Chat With our GitHub Repositories",
             style="padding-top:0.2rem;text-align:center;"
         ),
         id="header"
