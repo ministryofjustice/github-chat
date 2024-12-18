@@ -51,38 +51,6 @@ def more_info_tab(emb_mod:str=EMBEDDINGS_MODEL):
             """* Retrieval with OpenAI's
             <a href=https://openai.com/index/hello-gpt-4o/ target=_blank>GPT-4o series</a>."""
         ),
-        ui.hr(),
-        ui.h2("Known Issues", {"style": "font-size:25px;"}),
-        ui.markdown(
-            """* Queries are slow. This is due to design decisions
-            in an effort to mitigate hallucinations. To reduce wait
-            time, reduce the value of n Results. Response times
-            could be improved by pre-generating AI repo summaries.
-            """
-        ),
-        ui.markdown(
-            """* Repos in the `moj-analytical-platform` may
-            mistakenly show repo metadata as 'None'. This is likely
-            to be a flaw in the ingestion process regarding GitHub
-            API credentials rather than LLM hallucinations.
-            Alternative approaches to authorisation or use of
-            <a href=https://docs.github.com/en/graphql target=_blank>GitHub GraphQL API</a>
-            could resolve this issue."""
-        ),
-        ui.markdown(
-            """* Queries such as 'machine learning' tend to produce
-            results with higher relevance than queries like 'Are
-            there any repos about machine learning?'. At a cost to
-            performance, entity extraction of search keywords in
-            the user's query could be explored using the
-            <a href='https://dottxt-ai.github.io/outlines/latest/welcome/' target=_blank>Python `outlines` library</a>.
-        """),
-        ui.markdown(
-            """* This application contains public repo metadata
-            only. We are currently examining demand for an internal
-            application that would include all MoJ repo metadata.
-            """
-        ),
     )
 
 
@@ -121,6 +89,38 @@ def feedback_tab():
             """* An overview of the changes to this application can
             be viewed in the
             <a href=https://github.com/ministryofjustice/github-chat/blob/main/CHANGELOG.md target=_blank>changelog document</a>.
+            """
+        ),
+        ui.hr(),
+        ui.h2("Known Issues", {"style": "font-size:25px;"}),
+        ui.markdown(
+            """* Queries are slow. This is due to design decisions
+            in an effort to mitigate hallucinations. To reduce wait
+            time, reduce the value of n Results. Response times
+            could be improved by pre-generating AI repo summaries.
+            """
+        ),
+        ui.markdown(
+            """* Repos in the `moj-analytical-platform` may
+            mistakenly show repo metadata as 'None'. This is likely
+            to be a flaw in the ingestion process regarding GitHub
+            API credentials rather than LLM hallucinations.
+            Alternative approaches to authorisation or use of
+            <a href=https://docs.github.com/en/graphql target=_blank>GitHub GraphQL API</a>
+            could resolve this issue."""
+        ),
+        ui.markdown(
+            """* Queries such as 'machine learning' tend to produce
+            results with higher relevance than queries like 'Are
+            there any repos about machine learning?'. At a cost to
+            performance, entity extraction of search keywords in
+            the user's query could be explored using the
+            <a href='https://dottxt-ai.github.io/outlines/latest/welcome/' target=_blank>Python `outlines` library</a>.
+        """),
+        ui.markdown(
+            """* This application contains public repo metadata
+            only. We are currently examining demand for an internal
+            application that would include all MoJ repo metadata.
             """
         ),
     )
