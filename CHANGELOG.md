@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added input selectors for model temperature, presence penalty and maximum
-tokens.
+- Added input selectors for model temperature, presence penalty, frequency
+penalty and maximum tokens.
 
 ## [0.0.2] - 2024-12-16
 
