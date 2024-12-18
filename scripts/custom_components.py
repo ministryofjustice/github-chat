@@ -10,6 +10,28 @@ def more_info_tab(emb_mod:str=EMBEDDINGS_MODEL):
 
     return ui.nav_panel(
         "More details",
+        ui.h2("Model Parameters", {"style": "font-size:25px;"}),
+        ui.markdown(
+            """
+            * n results: Controls the number of results returned from the
+            vector store.
+            * Distance threshold: any result returned from the vector store
+            with a distance value that exceeds this threshold is removed.
+            * Model temperature: Larger values increase randomness in the
+            model responses. Very high values may increase the likelihood
+            of tokens in languages other than English.
+            * Presence penalty: Increases diversity in generated tokens by
+            penalising a token if it has appeared before.
+            * Frequency penalty: Increases diversity in generated tokens by
+            penalising common tokens.
+            * Max tokens (optional): The maximum number of tokens that can
+            be generated. Be aware that very small values can truncate
+            model responses.
+            * For more on model parameters, please consult
+            <a href=https://platform.openai.com/docs/api-reference/chat target=_blank>the OpenAI API documentation</a>.
+            """
+        ),
+        ui.hr(),
         ui.h2("Citations", {"style": "font-size:25px;"}),
         ui.markdown(
             f"""* Embeddings calculated with
@@ -107,8 +129,9 @@ def feedback_tab():
 NUMERIC_INPUTS = [
     {"id": "selected_n", "label": "n results", "value": 5, "min": 1, "max": None, "step": 1},
     {"id": "dist_thresh", "label": "Distance threshold", "value": 1.0, "min": 0.0, "max": 2.0, "step": 0.1},
-    {"id": "temp", "label": "Model temperature", "value": 0.7, "min": 0.0, "max": 1.0, "step": 0.1},
+    {"id": "temp", "label": "Model temperature", "value": 0.7, "min": 0.0, "max": 1.7, "step": 0.1},
     {"id": "pres_pen", "label": "Presence penalty", "value": 0.0, "min": -2.0, "max": 2.0, "step": 0.1},
+    {"id": "freq_pen", "label": "Frequency penalty", "value": 0.0, "min": -2.0, "max": 2.0, "step": 0.1},
     {"id": "max_tokens", "label": "Max tokens", "value": None, "min": 50, "max": 16_384, "step": 50},
 ]
 numeric_inputs = [ui.input_numeric(**_in) for _in in NUMERIC_INPUTS]

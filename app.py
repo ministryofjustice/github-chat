@@ -92,6 +92,7 @@ app_ui = ui.page_fillable(
     ui.card(  
     ui.layout_sidebar(
         ui.sidebar(
+            "Model Parameters",
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
             bg="#f0e3ff"
@@ -217,6 +218,7 @@ def server(input, output, session):
                     messages=stream,
                     max_completion_tokens=input.max_tokens(),
                     presence_penalty=input.pres_pen(),
+                    frequency_penalty=input.freq_pen(),
                     temperature=input.temp(),
                 )
                 ai_summary = model_resp.choices[0].message.content
@@ -243,6 +245,7 @@ def server(input, output, session):
                         ],
                     max_completion_tokens=input.max_tokens(),
                     presence_penalty=input.pres_pen(),
+                    frequency_penalty=input.freq_pen(),
                     temperature=input.temp(),
                 )
             summ_resp = meta_resp.choices[0].message.content
