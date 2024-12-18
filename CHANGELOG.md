@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added input selectors for model temperature, presence penalty, frequency
 penalty and maximum tokens.
+- A maximum value of 1.5 was applied to the temperature parameter to
+mitigate non-UTF-8 tokens and extremely slow responses.
 
 ## [0.0.2] - 2024-12-16
 
