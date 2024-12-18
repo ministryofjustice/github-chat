@@ -105,6 +105,30 @@ app_ui = ui.page_fillable(
                 max=2.0,
                 step=0.1,
                 ),
+            ui.input_numeric(
+                id="temp",
+                label="Choose a model temperature",
+                value=0.7,
+                min=0.0,
+                max=1.0,
+                step=0.1,
+            ),
+            ui.input_numeric(
+                id="pres_pen",
+                label="Select presence penalty",
+                value=0.0,
+                min=-2.0,
+                max=2.0,
+                step=0.1,
+            ),
+            ui.input_numeric(
+                id="max_tokens",
+                label="Select maximum tokens",
+                value=None,
+                min=50,
+                max=16_384,
+                step=50,
+            ),
             bg="#f0e3ff"
             ),  
         ui.navset_tab(
@@ -222,9 +246,14 @@ def server(input, output, session):
                     "content": SUMMARY_PROMPT.format(repo_deets=res)
                     }
                 stream.append(repo_content)
+                # AI summaries
                 model_resp = await openai_client.chat.completions.create(
-                    model=REPO_LLM, messages=stream
-                    )
+                    model=REPO_LLM,
+                    messages=stream,
+                    max_completion_tokens=input.max_tokens(),
+                    presence_penalty=input.pres_pen(),
+                    temperature=input.temp(),
+                )
                 ai_summary = model_resp.choices[0].message.content
                 logging.info(f"Repo {url} ai summary:\n{ai_summary}")
                 # rm summary to avoid growing context for next iter
@@ -239,13 +268,17 @@ def server(input, output, session):
             repo_results = "***".join(ui_resps)
             summary_prompt = format_meta_prompt(
                 usr_prompt=usr_prompt, res=repo_results
-                )        
+                )   
+            #  Meta summary
             meta_resp = await openai_client.chat.completions.create(
                     model=META_LLM,
                     messages=[
                         system_prompt,
                         {"role": "user", "content": summary_prompt},
-                        ]
+                        ],
+                    max_completion_tokens=input.max_tokens(),
+                    presence_penalty=input.pres_pen(),
+                    temperature=input.temp(),
                 )
             summ_resp = meta_resp.choices[0].message.content
             response = (
