@@ -73,7 +73,7 @@ def feedback_tab():
             over to our
             <a href=https://github.com/ministryofjustice/github-chat/discussions target=_blank>GitHub Discussions page</a>.
             * A list of
-            <a href='https://github.com/ministryofjustice/github-chat/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22selected%20for%20development%22' target=_blank>list of issues selected for development</a>
+            <a href='https://github.com/ministryofjustice/github-chat/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22selected%20for%20development%22' target=_blank>issues selected for development</a>
             is available on GitHub.
             * An overview of the changes to this application can be viewed
             in the
