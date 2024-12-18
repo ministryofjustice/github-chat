@@ -12,7 +12,9 @@ from shiny import App, ui
 
 from scripts.constants import SUMMARY_PROMPT, SYS_PROMPT, WELCOME_MSG
 from scripts.moderations import check_moderation
-from scripts.custom_components import more_info_tab, feedback_tab
+from scripts.custom_components import (
+    feedback_tab, more_info_tab, numeric_inputs
+)
 from scripts.pipeline_config import (
     EMBEDDINGS_MODEL,
     META_LLM,
@@ -88,47 +90,10 @@ app_ui = ui.page_fillable(
         moj-analytical-services GitHub organisations are included."""),
     ui.p(f"Data last updated: {vintage}"),
     ui.card(  
-    ui.layout_sidebar(  
+    ui.layout_sidebar(
         ui.sidebar(
-            ui.input_numeric(
-                id="selected_n",
-                label="n Results",
-                value=5,
-                min=1,
-                step=1,
-            ),
-            ui.input_numeric(
-                id="dist_thresh",
-                label="Distance Threshold",
-                value=1.0,
-                min=0.0,
-                max=2.0,
-                step=0.1,
-                ),
-            ui.input_numeric(
-                id="temp",
-                label="Choose a model temperature",
-                value=0.7,
-                min=0.0,
-                max=1.0,
-                step=0.1,
-            ),
-            ui.input_numeric(
-                id="pres_pen",
-                label="Select presence penalty",
-                value=0.0,
-                min=-2.0,
-                max=2.0,
-                step=0.1,
-            ),
-            ui.input_numeric(
-                id="max_tokens",
-                label="Select maximum tokens",
-                value=None,
-                min=50,
-                max=16_384,
-                step=50,
-            ),
+            # unpack all numeric inputs from custom_components
+            *numeric_inputs,
             bg="#f0e3ff"
             ),  
         ui.navset_tab(
