@@ -111,7 +111,7 @@ def feedback_tab():
 
 NUMERIC_INPUTS = [
     {"id": "selected_n", "label": "n results", "value": 5, "min": 1, "max": None, "step": 1},
-    {"id": "dist_thresh", "label": "Distance threshold", "value": 1.0, "min": 0.0, "max": 2.0, "step": 0.1},
+    {"id": "dist_thresh", "label": "Distance threshold", "value": 2.0, "min": 0.0, "max": 2.0, "step": 0.1},
     {"id": "temp", "label": "Model temperature", "value": 0.7, "min": 0.0, "max": 1.5, "step": 0.1},
     {"id": "pres_pen", "label": "Presence penalty", "value": 0.0, "min": -2.0, "max": 2.0, "step": 0.1},
     {"id": "freq_pen", "label": "Frequency penalty", "value": 0.0, "min": -2.0, "max": 2.0, "step": 0.1},
