@@ -1,3 +1,4 @@
+"""Create a collection in vector store labelled with data vintage."""
 import argparse
 import datetime as dt
 import glob
@@ -18,7 +19,6 @@ from scripts.string_utils import sanitise_string
 
 
 def embed():
-
     # Define the argument parser
     parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument(

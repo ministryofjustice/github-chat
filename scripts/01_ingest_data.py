@@ -1,3 +1,4 @@
+"""Ingest repo metadata & summarise with pipeline_config.REPO_LLM"""
 import datetime
 from time import sleep
 
@@ -15,7 +16,6 @@ from scripts.string_utils import sanitise_string
 def ingest():
 
     # configure -----------------------------------------------------------
-
     secrets = dotenv.dotenv_values(here(".env"))
     github_pat = secrets["GITHUB_PAT"]
     user_agent = secrets["AGENT"]
@@ -26,12 +26,10 @@ def ingest():
         github_pat=github_pat, user_agent=user_agent)
 
     # get repo lists ------------------------------------------------------
-
     org1 = github_client.get_org_repos(org_nms[0], public_only=True)
     org2 = github_client.get_org_repos(org_nms[1], public_only=True)
 
     # append the topics from each repo ------------------------------------
-
     topics1 = github_client.get_all_repo_metadata(
         html_urls=org1["html_url"],
         metadata="topics",
@@ -42,14 +40,12 @@ def ingest():
     )
     
     # munge tables --------------------------------------------------------
-
     repo_metadata = pd.concat([org1, org2], ignore_index=True)
     all_topics = pd.concat([topics1, topics2], ignore_index=True)
     for tab in [repo_metadata, all_topics]:
         tab.set_index("repo_url", inplace=True)
 
     repo_metadata = repo_metadata.join(all_topics)
-
 
     # ingest READMEs ------------------------------------------------------
     readmes = []
@@ -67,7 +63,6 @@ def ingest():
     repo_metadata["readme"] = readmes
 
     # AI summarises repos -------------------------------------------------
-
     openai_client = openai.OpenAI(api_key=openai_key)
     system_prompt = {
         "role": "system",
@@ -105,9 +100,6 @@ def ingest():
                 sleep(0.3)
 
     repo_metadata["ai_summary"] = ai_summaries
-
-
-
 
 
     # write to parquet ----------------------------------------------------
