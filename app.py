@@ -10,13 +10,16 @@ import openai
 from pyprojroot import here
 from shiny import App, ui
 
-from scripts.constants import SUMMARY_PROMPT, SYS_PROMPT, WELCOME_MSG
+from scripts.app_config import EMBEDDINGS_MODEL
+from scripts.constants import (
+    SYS_PROMPT,
+    WELCOME_MSG
+)
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
     feedback_tab, more_info_tab, numeric_inputs
 )
 from scripts.pipeline_config import (
-    EMBEDDINGS_MODEL,
     META_LLM,
     REPO_LLM,
     VECTOR_STORE_PTH,
@@ -36,14 +39,18 @@ logging.basicConfig(
     handlers=[logging.FileHandler(here("logs/app.log"))],
     )
 
-system_prompt = {"role": "system", "content": SYS_PROMPT}
+system_prompt = {
+    "role": "system",
+    "content": SYS_PROMPT.replace("\n", " ").replace("  ", "")
+}
 stream = [system_prompt]
 stream.append({"role": "assistant", "content": WELCOME_MSG})
 
 nm_pat = re.compile(r"Name:\s*([^,]+)", re.IGNORECASE)
 url_pat = re.compile(r"url:\s*([^,]+)", re.IGNORECASE)
 desc_pat = re.compile(r"Description: (.*?)(?=\sREADME:)", re.IGNORECASE)
-readme_pat = re.compile(r"README: (.*?)([^']+)", re.IGNORECASE)
+readme_pat = re.compile(r"README: (.*?)(?=,AI Summary:)", re.IGNORECASE)
+aisummary_pat = re.compile(r"AI Summary: (.*)", re.IGNORECASE)
 
 login(token=secrets["NOMIC_KEY"])
 openai_client = openai.AsyncOpenAI(api_key=secrets["OPENAI_KEY"])
@@ -161,16 +168,17 @@ def server(input, output, session):
                 i for i, dist in enumerate(results["distances"][0])
                 if dist > input.dist_thresh()
             ]
-            # delete results over selected threshold
-            for i in rem_inds[::-1]:
-                # careful with removing as adjusts index
-                del results["documents"][0][i]
-            
-            # handle cases where distance threshold is too low
-            if len(results["documents"][0]) == 0:
-                ui.notification_show(
-                    "No results were shown, increase distance threshold"
-                    )
+            if (n_filter := len(rem_inds)) > 0:
+                # delete results over selected threshold
+                for i in rem_inds[::-1]:
+                    # careful with removing as adjusts index
+                    del results["documents"][0][i]
+                ui.notification_show(f"{n_filter} results were removed.")
+                # handle cases where distance threshold is too low
+                if len(results["documents"][0]) == 0:
+                    ui.notification_show(
+                        "No results shown, increase distance threshold"
+                        )
 
             # for each result, extract properties and inject into template
             ui_resps = []  
@@ -179,11 +187,13 @@ def server(input, output, session):
                 url = url_pat.findall(res)
                 desc = desc_pat.findall(res)
                 readme = readme_pat.findall(res)
+                ai_summary = aisummary_pat.findall(res)
                 dist = results["distances"][0][ind]
-
                 logging.info(
                     f"Available metas:\n{results['metadatas'][0][ind]}"
                 )
+                logging.info(f"Regex found README:\n{readme}")
+                logging.info(f"Regex found AI summary:\n{ai_summary}")
                 upd_at = results["metadatas"][0][ind].get("updated_at")
                 dt_object = datetime.datetime.fromtimestamp(upd_at)
 
@@ -203,32 +213,10 @@ def server(input, output, session):
                     "programming_language": results["metadatas"][0][ind].get("programming_language"),
                     "updated_at": date_out,
                     "distance": dist, 
+                    "model_summary": ai_summary[0] if ai_summary else None,
                 }
-
-                logging.info(f"Metadatas:\n{meta_dict}")
-
-                repo_content = {
-                    "role": "user",
-                    "content": SUMMARY_PROMPT.format(repo_deets=res)
-                    }
-                stream.append(repo_content)
-                # AI summaries
-                model_resp = await openai_client.chat.completions.create(
-                    model=REPO_LLM,
-                    messages=stream,
-                    max_completion_tokens=input.max_tokens(),
-                    presence_penalty=input.pres_pen(),
-                    frequency_penalty=input.freq_pen(),
-                    temperature=input.temp(),
-                )
-                ai_summary = model_resp.choices[0].message.content
-                logging.info(f"Repo {url} ai summary:\n{ai_summary}")
-                # rm summary to avoid growing context for next iter
-                stream.pop()
-
                 ui_resp = format_results(
                     db_result=meta_dict,
-                    model_summary=ai_summary,
                     )
                 ui_resps.append(ui_resp)
 
@@ -236,7 +224,7 @@ def server(input, output, session):
             summary_prompt = format_meta_prompt(
                 usr_prompt=usr_prompt, res=repo_results
                 )   
-            #  Meta summary
+            #  Meta summary -----------------------------------------------
             meta_resp = await openai_client.chat.completions.create(
                     model=META_LLM,
                     messages=[
