@@ -84,10 +84,6 @@ def feedback_tab():
         ui.h2("Known Issues", {"style": "font-size:25px;"}),
         ui.markdown(
             """
-            * Queries are slow. This is due to design decisions in an
-            effort to mitigate hallucinations. To reduce wait time, reduce
-            the value of n Results. Response times could be improved by
-            pre-generating AI repo summaries.
             * Repos in the `moj-analytical-platform` may mistakenly show
             repo metadata as 'None'. This is likely to be a flaw in the
             ingestion process regarding GitHub API credentials rather than
@@ -111,7 +107,7 @@ def feedback_tab():
 
 NUMERIC_INPUTS = [
     {"id": "selected_n", "label": "n results", "value": 5, "min": 1, "max": None, "step": 1},
-    {"id": "dist_thresh", "label": "Distance threshold", "value": 1.0, "min": 0.0, "max": 2.0, "step": 0.1},
+    {"id": "dist_thresh", "label": "Distance threshold", "value": 2.0, "min": 0.0, "max": 2.0, "step": 0.1},
     {"id": "temp", "label": "Model temperature", "value": 0.7, "min": 0.0, "max": 1.5, "step": 0.1},
     {"id": "pres_pen", "label": "Presence penalty", "value": 0.0, "min": -2.0, "max": 2.0, "step": 0.1},
     {"id": "freq_pen", "label": "Frequency penalty", "value": 0.0, "min": -2.0, "max": 2.0, "step": 0.1},
