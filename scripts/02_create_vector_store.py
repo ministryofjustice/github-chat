@@ -29,30 +29,20 @@ def embed():
 
     # Parse the arguments
     args = parser.parse_args()
-
-    # secrets = dotenv.dotenv_values(here(".env"))
-    # openai_key = secrets["OPENAI_KEY"]
-    # agent = secrets["AGENT"]
-    # github_pat = secrets["GITHUB_PAT"]
-    # github_client = GithubClient(github_pat=github_pat, user_agent=agent)
-
     # pull embeddings model if needed
     ollama.pull(EMBEDDINGS_MODEL)
 
     # bring in the latest version of the data only
     latest_pth = max(glob.glob(str(here("data/*.parquet"))))
     latest_dat = pd.read_parquet(latest_pth)
-
+    # get the vintage in order to label the collection later
     date_pat = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}_\d{2}_\d{2}.\d{6}")
     match = date_pat.search(latest_pth)
     vintage = match[0] 
-
-
     # format documents for embedding & storage. chromadb IDs must be string
     ids = latest_dat["id"].astype(str).to_list() 
     metas = []
     documents = []
-
     target_metas = [
         "is_private",
         "is_archived",
@@ -60,7 +50,6 @@ def embed():
         "updated_at",
         "org_nm"
         ]
-
     for i, row in latest_dat.iterrows():
         ts = dt.datetime.strptime(
             row["updated_at"], "%Y-%m-%dT%H:%M:%SZ"
@@ -112,19 +101,14 @@ def embed():
 
     ollama_response = ollama.embed(model=EMBEDDINGS_MODEL, input=documents)
 
-
-
     # Vector store ========================================================
     chroma_client = chromadb.PersistentClient(
         path=str(here("data/nomic-embeddings")),
         settings=chromadb.config.Settings(allow_reset=True),
         )
-
     chroma_client.reset()
-
     collection = chroma_client.create_collection(
         name=f"moj-github-{vintage}")
-
     collection.add(
         ids=ids,
         metadatas=metas,
@@ -133,7 +117,6 @@ def embed():
             ],
         embeddings=ollama_response.embeddings
         )
-
     collection.peek()
 
 
