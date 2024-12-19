@@ -7,7 +7,6 @@ from scripts.constants import META_PROMPT, RESPONSE_TEMPLATE
 
 def format_results(
     db_result:dict,
-    model_summary:str,
     template:str=RESPONSE_TEMPLATE
     ) -> str:
     return template.format(
@@ -20,7 +19,7 @@ def format_results(
         updated_at=db_result.get("updated_at"),
         programming_language=db_result.get("programming_language"),
         distance=db_result.get("distance"),
-        model_summary=model_summary
+        model_summary=db_result.get("model_summary"),
         )
 
 def format_meta_prompt(
