@@ -84,10 +84,6 @@ def feedback_tab():
         ui.h2("Known Issues", {"style": "font-size:25px;"}),
         ui.markdown(
             """
-            * Queries are slow. This is due to design decisions in an
-            effort to mitigate hallucinations. To reduce wait time, reduce
-            the value of n Results. Response times could be improved by
-            pre-generating AI repo summaries.
             * Repos in the `moj-analytical-platform` may mistakenly show
             repo metadata as 'None'. This is likely to be a flaw in the
             ingestion process regarding GitHub API credentials rather than
