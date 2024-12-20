@@ -229,31 +229,30 @@ def server(input, output, session):
                 usr_prompt=usr_prompt, res=repo_results
                 )   
             #  Meta summary -----------------------------------------------
-            if not input.stream():
-                meta_resp = await openai_client.chat.completions.create(
-                        model=META_LLM,
-                        messages=[
-                            system_prompt,
-                            {"role": "user", "content": summary_prompt},
-                            ],
-                        max_completion_tokens=input.max_tokens(),
-                        presence_penalty=input.pres_pen(),
-                        frequency_penalty=input.freq_pen(),
-                        temperature=input.temp(),
-                    )
-                summ_resp = meta_resp.choices[0].message.content
-                await chat.append_message(summ_resp)
-                await chat.append_message(repo_results)
-            else:
-                meta_resp = await openai_client.chat.completions.create(
-                    model=META_LLM,
-                    messages=[
-                            system_prompt,
-                            {"role": "user", "content": summary_prompt},
-                            ],
-                    stream=True,
-                )
+            completions_params = {
+                "model": META_LLM,
+                "messages": [
+                    system_prompt,
+                    {"role": "user", "content": summary_prompt}
+                    ],
+                "stream": input.stream(),
+                "max_completion_tokens": input.max_tokens(),
+                "presence_penalty": input.pres_pen(),
+                "frequency_penalty": input.freq_pen(),
+                "temperature": input.temp(),
+            }
+            meta_resp = await openai_client.chat.completions.create(
+                **completions_params
+            )
+            # the response object from openai client differs when streaming
+            if input.stream():
                 await chat.append_message_stream(meta_resp)
                 await chat.append_message_stream(repo_results)
+            else:
+                await chat.append_message(
+                    meta_resp.choices[0].message.content
+                )
+                await chat.append_message(repo_results)
+ 
 
 app = App(app_ui, server, static_assets=app_dir / "www")
