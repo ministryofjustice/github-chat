@@ -63,7 +63,6 @@ textarea.form-control.textarea-autoresize {
     border-color: #3d1265;
 }
 
-
 #stream.form-check-input:checked {
     background-color: #3d1265;
     border-color: #3d1265;
@@ -77,9 +76,6 @@ label {
     color: #3d1265;
 }
 
-
-
 /* .bi-arrow-up-circle-fill {
     fill: #ff007c;
 } */
-

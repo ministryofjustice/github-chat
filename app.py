@@ -240,10 +240,12 @@ def server(input, output, session):
                     temperature=input.temp(),
                 )
             summ_resp = meta_resp.choices[0].message.content
-            response = (
-                f"**Outcome:** {summ_resp}\n***" +
-                f"\n**Results:**\n{repo_results}"
-            )
-            await chat.append_message(response)
+            await chat.append_message(summ_resp)
+            await chat.append_message(repo_results)
+            # response = (
+            #     f"**Outcome:** {summ_resp}\n***" +
+            #     f"\n**Results:**\n{repo_results}"
+            # )
+            # await chat.append_message(response)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
