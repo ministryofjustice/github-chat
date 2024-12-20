@@ -13,6 +13,17 @@ def more_info_tab(emb_mod:str=EMBEDDINGS_MODEL):
         ui.h2("Model Parameters", {"style": "font-size:25px;"}),
         ui.markdown(
             """
+            Since <a href=https://github.com/ministryofjustice/github-chat/blob/main/CHANGELOG.md#010---2024-12-20  target=_blank>version 0.1.0</a>,
+            the app now generates AI repository summaries in advance. This
+            change improves response times. However, the model parameters
+            below only affect how the model evaluates your query
+            fulfillment, as stated in its response. AI repo summaries are
+            no longer affected by adjusting these parameters.
+
+            * Stream responses:  Determines whether to stream responses
+            from the model token by token. This improves the time to the
+            first token but may affect model behavior. The default setting
+            is True.
             * n results: Controls the number of results returned from the
             vector store.
             * Distance threshold: any result returned from the vector store

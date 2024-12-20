@@ -100,6 +100,9 @@ app_ui = ui.page_fillable(
     ui.layout_sidebar(
         ui.sidebar(
             "Model Parameters",
+            ui.input_switch(
+                id="stream", label="Stream responses", value=True
+            ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
             bg="#f0e3ff"
@@ -107,7 +110,7 @@ app_ui = ui.page_fillable(
         ui.navset_tab(
             ui.nav_panel(
                 f"Chat with {META_LLM}",
-                ui.chat_ui(id="chat", placeholder="Enter some keywords"),
+                ui.chat_ui(id="chat", placeholder="Enter some keywords", format="openai"),
             ),
             # custom ui components:
             more_info_tab(),
@@ -122,14 +125,15 @@ def server(input, output, session):
     chat = ui.Chat(
         id="chat",
         messages=["Hi! Perform semantic search with MoJ GitHub repos."],
-        tokenizer=None)
+        tokenizer=None
+    )
 
 
     @chat.on_user_submit
     async def respond():
         """A callback to run when the user submits a message."""
-        current_time = datetime.datetime.now()
-        # Get the user's input
+        current_time = datetime.datetime.now() # for working out days since
+        # repos were last updated. Now, get the user's input:
         usr_prompt = sanitise_string(chat.user_input())
         logging.info("User submitted prompt =============================")
         logging.info(f"Santised user input: {usr_prompt}")
@@ -225,22 +229,30 @@ def server(input, output, session):
                 usr_prompt=usr_prompt, res=repo_results
                 )   
             #  Meta summary -----------------------------------------------
+            completions_params = {
+                "model": META_LLM,
+                "messages": [
+                    system_prompt,
+                    {"role": "user", "content": summary_prompt}
+                    ],
+                "stream": input.stream(),
+                "max_completion_tokens": input.max_tokens(),
+                "presence_penalty": input.pres_pen(),
+                "frequency_penalty": input.freq_pen(),
+                "temperature": input.temp(),
+            }
             meta_resp = await openai_client.chat.completions.create(
-                    model=META_LLM,
-                    messages=[
-                        system_prompt,
-                        {"role": "user", "content": summary_prompt},
-                        ],
-                    max_completion_tokens=input.max_tokens(),
-                    presence_penalty=input.pres_pen(),
-                    frequency_penalty=input.freq_pen(),
-                    temperature=input.temp(),
-                )
-            summ_resp = meta_resp.choices[0].message.content
-            response = (
-                f"**Outcome:** {summ_resp}\n***" +
-                f"\n**Results:**\n{repo_results}"
+                **completions_params
             )
-            await chat.append_message(response)
+            # the response object from openai client differs when streaming
+            if input.stream():
+                await chat.append_message_stream(meta_resp)
+                await chat.append_message_stream(repo_results)
+            else:
+                await chat.append_message(
+                    meta_resp.choices[0].message.content
+                )
+                await chat.append_message(repo_results)
+ 
 
 app = App(app_ui, server, static_assets=app_dir / "www")
