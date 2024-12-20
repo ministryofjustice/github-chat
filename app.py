@@ -100,6 +100,9 @@ app_ui = ui.page_fillable(
     ui.layout_sidebar(
         ui.sidebar(
             "Model Parameters",
+            ui.input_switch(
+                id="stream", label="Stream responses", value=True
+            ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
             bg="#f0e3ff"
