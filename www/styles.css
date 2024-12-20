@@ -69,6 +69,14 @@ textarea.form-control.textarea-autoresize {
     border-color: #3d1265;
 }
 
+label {
+    color: #3d1265;
+}
+
+.sidebar-content {
+    color: #3d1265;
+}
+
 
 
 /* .bi-arrow-up-circle-fill {
