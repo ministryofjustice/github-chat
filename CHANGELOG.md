@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A switch component to UI that allows user to ask for streamed model 
+responses.
+- Server logic to conditionally return streamed model responses, improving
+time to first token.
+
 ### Changed
 
 - AI Repo sumaries are no longer requested within the application runtime, 
