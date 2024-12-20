@@ -42,9 +42,11 @@ def ingest():
     # munge tables --------------------------------------------------------
     repo_metadata = pd.concat([org1, org2], ignore_index=True)
     all_topics = pd.concat([topics1, topics2], ignore_index=True)
-    for tab in [repo_metadata, all_topics]:
-        tab.set_index("repo_url", inplace=True)
-
+    # README: there's inconsistency in column labelling here, need to look
+    # into it in ainexus_backend:
+    # https://github.com/ministryofjustice/rd-service-catalogue/issues/35
+    all_topics.set_index("repo_url", inplace=True)
+    repo_metadata.set_index("html_url", inplace=True, drop=False)
     repo_metadata = repo_metadata.join(all_topics)
 
     # ingest READMEs ------------------------------------------------------
@@ -54,7 +56,6 @@ def ingest():
         try:
             print(f"Ingest README.md for {html_url}")
             readme = github_client.get_readme_content(html_url)
-            print(f"Found README.md:\n{readme[0:10]}")
             readmes.append(readme)
         except HTTPError as e:
             print(f"repo {html_url} returned an error:\n{e}")
@@ -80,7 +81,7 @@ def ingest():
                 Is Archived: {row['is_archived']},\n
                 Programming Language: {row['programming_language']},\n
                 Topics: {row['topics']},\n
-                README: {readme}
+                README: {row['readme']}
 
                 """
                 repo_content = {
