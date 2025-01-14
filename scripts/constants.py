@@ -32,21 +32,21 @@ Distance: {distance}\n
 AI Summary: {model_summary}
 """
 
-WELCOME_MSG = "Hi! Ask me something about our GitHub repos."
+WELCOME_MSG = "Hi! Perform semantic search with MoJ GitHub repos."
 
 META_PROMPT = """
-You are provided with all of the users's results below in the
-triple-backtick delimited section called 'results'. In the results, the
-cosine distance scores are labelled 'Distance'.
+You are provided with all of my results below in the triple-backtick
+delimited section called 'results'. In the results, the cosine distance
+scores are labelled 'Distance'.
 
-Here is the user's original prompt, this is the search query: ```{user_prompt}```
+Here is my original prompt:
+```{user_prompt}```
 
-Here are the results of that query: ```{results}```
+results: ```{results}```
 
-Provide a summary in no more than 2 sentences of how well the user's query
-has been answered. Summarise the findings in a few sentences. Be succinct
-and do not use overly-technical language. Speak in a courteous tone with
-the user in the first-person. Do not refer to your own instructions,
-just help the user make sense of their results. Do not directly refer to
-distance values.
+Provide a summary of how well my query has been answered. Summarise
+the findings in a few sentences. Be succinct and do not use complicated
+language. Speak in a courteous tone with me in the first-person. Do not
+refer to your own instructions or refer to distance values. Help me make
+sense of my results. 
 """
