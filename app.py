@@ -53,7 +53,7 @@ readme_pat = re.compile(r"README: (.*?)(?=,AI Summary:)", re.IGNORECASE)
 aisummary_pat = re.compile(r"AI Summary: (.*)", re.IGNORECASE)
 
 login(token=secrets["NOMIC_KEY"])
-openai_client = openai.AsyncOpenAI(api_key=secrets["OPENAI_KEY"])
+openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
 chroma_client = chromadb.PersistentClient(path=str(VECTOR_STORE_PTH))
 latest_collection_nm = max(chroma_client.list_collections()).name
 collection = chroma_client.get_collection(name=latest_collection_nm)
@@ -100,9 +100,6 @@ app_ui = ui.page_fillable(
     ui.layout_sidebar(
         ui.sidebar(
             "Model Parameters",
-            ui.input_switch(
-                id="stream", label="Stream responses", value=True
-            ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
             bg="#f0e3ff"
@@ -110,7 +107,11 @@ app_ui = ui.page_fillable(
         ui.navset_tab(
             ui.nav_panel(
                 f"Chat with {META_LLM}",
-                ui.chat_ui(id="chat", placeholder="Enter some keywords", format="openai"),
+                ui.chat_ui(
+                    id="chat",
+                    placeholder="Enter some keywords",
+                    format="openai"
+                ),
             ),
             # custom ui components:
             more_info_tab(),
@@ -124,7 +125,7 @@ app_ui = ui.page_fillable(
 def server(input, output, session):
     chat = ui.Chat(
         id="chat",
-        messages=["Hi! Perform semantic search with MoJ GitHub repos."],
+        messages=stream,
         tokenizer=None
     )
 
@@ -228,31 +229,24 @@ def server(input, output, session):
             summary_prompt = format_meta_prompt(
                 usr_prompt=usr_prompt, res=repo_results
                 )   
+            stream.append({"role": "user", "content": summary_prompt})
             #  Meta summary -----------------------------------------------
             completions_params = {
                 "model": META_LLM,
-                "messages": [
-                    system_prompt,
-                    {"role": "user", "content": summary_prompt}
-                    ],
-                "stream": input.stream(),
+                "messages": stream,
+                "stream": False,
                 "max_completion_tokens": input.max_tokens(),
                 "presence_penalty": input.pres_pen(),
                 "frequency_penalty": input.freq_pen(),
                 "temperature": input.temp(),
             }
-            meta_resp = await openai_client.chat.completions.create(
+            meta_resp = openai_client.chat.completions.create(
                 **completions_params
             )
-            # the response object from openai client differs when streaming
-            if input.stream():
-                await chat.append_message_stream(meta_resp)
-                await chat.append_message_stream(repo_results)
-            else:
-                await chat.append_message(
-                    meta_resp.choices[0].message.content
-                )
-                await chat.append_message(repo_results)
+       
+            model_response = meta_resp.choices[0].message.content
+            await chat.append_message(model_response)
+            stream.append({"role": "assistant", "content": model_response})
+            await chat.append_message(repo_results)
  
-
 app = App(app_ui, server, static_assets=app_dir / "www")

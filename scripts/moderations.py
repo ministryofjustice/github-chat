@@ -21,7 +21,7 @@ async def check_moderation(prompt:str, openai_client:Client) -> str:
     str
         The category violations if flagged, else None.
     """
-    response = await openai_client.moderations.create(input=prompt)
+    response = openai_client.moderations.create(input=prompt)
     content = response.results[0].to_dict()
     if content["flagged"]:
         infringements = []
