@@ -20,10 +20,6 @@ def more_info_tab(emb_mod:str=EMBEDDINGS_MODEL):
             fulfillment, as stated in its response. AI repo summaries are
             no longer affected by adjusting these parameters.
 
-            * Stream responses:  Determines whether to stream responses
-            from the model token by token. This improves the time to the
-            first token but may affect model behavior. The default setting
-            is True.
             * n results: Controls the number of results returned from the
             vector store.
             * Distance threshold: any result returned from the vector store
@@ -102,12 +98,11 @@ def feedback_tab():
             use of
             <a href=https://docs.github.com/en/graphql target=_blank>GitHub GraphQL API</a>
             could resolve this issue.
-            * Queries such as 'machine learning' tend to produce results
-            with higher relevance than queries like 'Are there any repos
-            about machine learning?'. At a cost to performance, entity
-            extraction of search keywords in the user's query could be
-            explored using the
-            <a href='https://dottxt-ai.github.io/outlines/latest/welcome/' target=_blank>Python `outlines` library</a>.
+            * The model no longer streams responses, since
+            <a href=https://github.com/ministryofjustice/github-chat/blob/main/CHANGELOG.md#020---2024-01-15  target=_blank>version 0.2.0</a>,
+            the LLM is able to extract key terms from the user's prompts in
+            order to query the vector store. Implementing this feature with
+            streamed responses has proven to be difficult.  
             * This application contains public repo metadata only. We are
             currently examining demand for an internal application that
             would include all MoJ repo metadata.
