@@ -1,35 +1,24 @@
-import datetime
+import json
 import logging
 from pathlib import Path
-import re
 
-import chromadb
 import dotenv
-from nomic import embed, login
 import openai
 from pyprojroot import here
 from shiny import App, ui
 
-from scripts.app_config import EMBEDDINGS_MODEL
+from scripts.app_config import APP_LLM
+from scripts.chroma_utils import ChromaDBPipeline
 from scripts.constants import (
-    SYS_PROMPT,
+    APP_SYS_PROMPT,
     WELCOME_MSG
 )
+from scripts.custom_tools import ExtractKeywordEntities, toolbox
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
     feedback_tab, more_info_tab, numeric_inputs
 )
-from scripts.pipeline_config import (
-    META_LLM,
-    REPO_LLM,
-    VECTOR_STORE_PTH,
-)
-from scripts.string_utils import (
-    format_results,
-    format_meta_prompt,
-    get_vintage_from_str,
-    sanitise_string,
-)
+from scripts.string_utils import sanitise_string
 
 # Before ==================================================================
 secrets = dotenv.dotenv_values(here(".env"))
@@ -39,25 +28,14 @@ logging.basicConfig(
     handlers=[logging.FileHandler(here("logs/app.log"))],
     )
 
-system_prompt = {
-    "role": "system",
-    "content": SYS_PROMPT.replace("\n", " ").replace("  ", "")
-}
+system_prompt = {"role": "system", "content": APP_SYS_PROMPT}
 stream = [system_prompt]
 stream.append({"role": "assistant", "content": WELCOME_MSG})
 
-nm_pat = re.compile(r"Name:\s*([^,]+)", re.IGNORECASE)
-url_pat = re.compile(r"url:\s*([^,]+)", re.IGNORECASE)
-desc_pat = re.compile(r"Description: (.*?)(?=\sREADME:)", re.IGNORECASE)
-readme_pat = re.compile(r"README: (.*?)(?=,AI Summary:)", re.IGNORECASE)
-aisummary_pat = re.compile(r"AI Summary: (.*)", re.IGNORECASE)
-
-login(token=secrets["NOMIC_KEY"])
-openai_client = openai.AsyncOpenAI(api_key=secrets["OPENAI_KEY"])
-chroma_client = chromadb.PersistentClient(path=str(VECTOR_STORE_PTH))
-latest_collection_nm = max(chroma_client.list_collections()).name
-collection = chroma_client.get_collection(name=latest_collection_nm)
-vintage = get_vintage_from_str(latest_collection_nm)
+openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
+chroma_pipeline = ChromaDBPipeline()
+chroma_pipeline.get_data_vintage()
+vintage = chroma_pipeline.data_vintage
 
 # Startup ends ============================================================
 
@@ -100,17 +78,18 @@ app_ui = ui.page_fillable(
     ui.layout_sidebar(
         ui.sidebar(
             "Model Parameters",
-            ui.input_switch(
-                id="stream", label="Stream responses", value=True
-            ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
             bg="#f0e3ff"
             ),  
         ui.navset_tab(
             ui.nav_panel(
-                f"Chat with {META_LLM}",
-                ui.chat_ui(id="chat", placeholder="Enter some keywords", format="openai"),
+                f"Chat with {APP_LLM}",
+                ui.chat_ui(
+                    id="chat",
+                    placeholder="Enter some keywords",
+                    format="openai"
+                ),
             ),
             # custom ui components:
             more_info_tab(),
@@ -124,7 +103,7 @@ app_ui = ui.page_fillable(
 def server(input, output, session):
     chat = ui.Chat(
         id="chat",
-        messages=["Hi! Perform semantic search with MoJ GitHub repos."],
+        messages=stream,
         tokenizer=None
     )
 
@@ -132,17 +111,15 @@ def server(input, output, session):
     @chat.on_user_submit
     async def respond():
         """A callback to run when the user submits a message."""
-        current_time = datetime.datetime.now() # for working out days since
-        # repos were last updated. Now, get the user's input:
-        usr_prompt = sanitise_string(chat.user_input())
+        sanitised_prompt = sanitise_string(chat.user_input())
         logging.info("User submitted prompt =============================")
-        logging.info(f"Santised user input: {usr_prompt}")
+        logging.info(f"Santised user input: {sanitised_prompt}")
         logging.info("Moderating prompt =================================")
         flagged_prompt = await check_moderation(
-            prompt=usr_prompt, openai_client=openai_client
+            prompt=sanitised_prompt, openai_client=openai_client
             )
         logging.info(f"Moderation outcome: {flagged_prompt}")
-        if flagged_prompt != usr_prompt:
+        if flagged_prompt != sanitised_prompt:
             await chat.append_message({
                 "role": "assistant",
                 "content": ("Your message may violate OpenAI's usage "
@@ -150,109 +127,75 @@ def server(input, output, session):
                 "your input and try again."),
             })
             logging.info("Discarding moderated prompt ===================")
-            logging.info(f"Discarded prompt: {usr_prompt}")
-            del usr_prompt
+            logging.info(f"Discarded prompt: {sanitised_prompt}")
+            del sanitised_prompt
         else:
-            # prompt has passed moderation, embed with nomic Atlas
-            query_embeddings = embed.text(
-                texts=[usr_prompt],
-                model=EMBEDDINGS_MODEL,
-                task_type="search_query",
-            )
-            results = collection.query(
-                query_embeddings=query_embeddings.get("embeddings"),
-                n_results=input.selected_n()
-                )
-
-            # filter out any results that are above the distance threshold
-            logging.info("Vector Store queried ==========================")
-            logging.info(f"Search results: {results}")
-            logging.info("Filtering results =============================")
-            rem_inds = [
-                i for i, dist in enumerate(results["distances"][0])
-                if dist > input.dist_thresh()
-            ]
-            if (n_filter := len(rem_inds)) > 0:
-                # delete results over selected threshold
-                for i in rem_inds[::-1]:
-                    # careful with removing as adjusts index
-                    del results["documents"][0][i]
-                ui.notification_show(f"{n_filter} results were removed.")
-                # handle cases where distance threshold is too low
-                if len(results["documents"][0]) == 0:
-                    ui.notification_show(
-                        "No results shown, increase distance threshold"
-                        )
-
-            # for each result, extract properties and inject into template
-            ui_resps = []  
-            for ind, res in enumerate(results["documents"][0]):
-                nm = nm_pat.findall(res)
-                url = url_pat.findall(res)
-                desc = desc_pat.findall(res)
-                readme = readme_pat.findall(res)
-                ai_summary = aisummary_pat.findall(res)
-                dist = results["distances"][0][ind]
-                logging.info(
-                    f"Available metas:\n{results['metadatas'][0][ind]}"
-                )
-                logging.info(f"Regex found README:\n{readme}")
-                logging.info(f"Regex found AI summary:\n{ai_summary}")
-                upd_at = results["metadatas"][0][ind].get("updated_at")
-                dt_object = datetime.datetime.fromtimestamp(upd_at)
-
-                days_ago = (current_time - dt_object).days
-                formatted_date = dt_object.strftime(
-                    "%A, %d %B, %Y at %H:%M"
-                )
-                date_out = f"{formatted_date} ({days_ago} days ago)."
-
-                meta_dict = {
-                    "org_nm": results["metadatas"][0][ind].get("org_nm"),
-                    "repo_nm": nm[0] if nm else None,
-                    "html_url": url[0] if url else None,
-                    "repo_desc": desc[0] if desc else None,
-                    "is_private": results["metadatas"][0][ind].get("is_private"),
-                    "is_archived": results["metadatas"][0][ind].get("is_archived"),
-                    "programming_language": results["metadatas"][0][ind].get("programming_language"),
-                    "updated_at": date_out,
-                    "distance": dist, 
-                    "model_summary": ai_summary[0] if ai_summary else None,
-                }
-                ui_resp = format_results(
-                    db_result=meta_dict,
-                    )
-                ui_resps.append(ui_resp)
-
-            repo_results = "***".join(ui_resps)
-            summary_prompt = format_meta_prompt(
-                usr_prompt=usr_prompt, res=repo_results
-                )   
+            # prompt has passed moderation
+            stream.append({"role": "user", "content": sanitised_prompt})
             #  Meta summary -----------------------------------------------
             completions_params = {
-                "model": META_LLM,
-                "messages": [
-                    system_prompt,
-                    {"role": "user", "content": summary_prompt}
-                    ],
-                "stream": input.stream(),
+                "model": APP_LLM,
+                "messages": stream,
+                "stream": False,
+                "tools": toolbox,
                 "max_completion_tokens": input.max_tokens(),
                 "presence_penalty": input.pres_pen(),
                 "frequency_penalty": input.freq_pen(),
                 "temperature": input.temp(),
             }
-            meta_resp = await openai_client.chat.completions.create(
+            response = openai_client.chat.completions.create(
                 **completions_params
             )
-            # the response object from openai client differs when streaming
-            if input.stream():
-                await chat.append_message_stream(meta_resp)
-                await chat.append_message_stream(repo_results)
-            else:
-                await chat.append_message(
-                    meta_resp.choices[0].message.content
-                )
-                await chat.append_message(repo_results)
- 
+            # implement conditional flow dependent upon whether a tool call
+            # is asked for
+            resp = response.choices[0]
+            if (refusal := resp.message.refusal):
+                sanitised_refusal = sanitise_string(refusal)
+                await chat.append_message(sanitised_refusal)
+                stream.append(
+                    {"role": "assistant", "content": sanitised_refusal}
+                    )
+            elif (msg := resp.message.content):
+                sanitised_msg = sanitise_string(msg)
+                await chat.append_message(sanitised_msg)
+                stream.append(
+                    {"role": "assistant", "content": sanitised_msg}
+                    )
+            elif (tool_call := resp.message.tool_calls):
+                function_name = tool_call[0].function.name
+                arguments = tool_call[0].function.arguments
+                sanitised_func_nm = sanitise_string(function_name)
+                sanitised_args = [sanitise_string(arg) for arg in json.loads(arguments)["keywords"]]
+                if sanitised_func_nm == "ExtractKeywordEntities":
+                    # Pydantic will raise if keywords do not conform to schema
+                    extracted_terms = ExtractKeywordEntities(keywords=sanitised_args)
+                    ui.notification_show(
+                        f"Searching database for keywords: {', '.join(extracted_terms.keywords)}"
+                        )
+                    summarise_this = chroma_pipeline.execute_pipeline(
+                        keywords=extracted_terms.keywords,
+                        n_results=input.selected_n(),
+                        distance_threshold=input.dist_thresh(),
+                        sanitised_prompt=sanitised_prompt
+                    )
+                    if (n_removed := chroma_pipeline.total_removed) > 0:
+                        ui.notification_show(
+                            f"{n_removed} results were removed."
+                            )
+                    if len(chroma_pipeline.results) == 0:
+                        ui.notification_show(
+                            "No results shown, increase distance threshold"
+                            )
+                    stream.append(summarise_this)
+                    response = openai_client.chat.completions.create(
+                        **completions_params
+                        )
+                    meta_resp = {
+                        "role": "assistant",
+                        "content": response.choices[0].message.content
+                        }
+                    await chat.append_message(response)
+                    await chat.append_message(chroma_pipeline.chat_ui_results)
+                    stream.append(meta_resp)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
