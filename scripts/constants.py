@@ -8,6 +8,23 @@ any more questions about your summary, so never ask them to follow up with
 any further questions.
 """
 
+STOP_WORDS = [
+    "repo",
+    "repository",
+    "repositories",
+    "moj",
+    "ministry of justice",
+    "justice digital",
+    "github"
+]
+
+APP_SYS_PROMPT = f"""
+{SYS_PROMPT}  If the user asks about GitHub repositories, use the supplied
+tools to assist them. Extract apparent keywords from their latest prompt
+only, in order to use in the database search. Ensure that you ignore the
+following stopwords: {", ".join(STOP_WORDS)}
+""".replace("\n", " ").replace("  ", "")
+
 SUMMARY_PROMPT = """The details of an MoJ GitHub repository follow, within
 triple backtick delimiters. Provide a short, high-level summary of the
 purpose of the repository. Talk directly to the user in first person.
