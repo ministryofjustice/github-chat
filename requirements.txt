@@ -3,6 +3,7 @@ chromadb
 faicons
 nomic
 openai
+pydantic
 pyprojroot
 python-dotenv
 shiny==1.2.1
