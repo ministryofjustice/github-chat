@@ -19,6 +19,10 @@ This is a basic
 application allowing a user to perform semantic search with content from
 Ministry of Justice GitHub repos.
 
+The live version of the app lives at https://richleysh84.shinyapps.io/moj-github-chat/ .
+
+The development version of the app lives at https://richleysh84.shinyapps.io/moj-github-chat-dev/ .
+
 ### Contributing
 
 Please refer to the [developer guidance](./CONTRIBUTING.md).
