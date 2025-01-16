@@ -165,12 +165,18 @@ def server(input, output, session):
                 function_name = tool_call[0].function.name
                 arguments = tool_call[0].function.arguments
                 sanitised_func_nm = sanitise_string(function_name)
-                sanitised_args = [sanitise_string(arg) for arg in json.loads(arguments)["keywords"]]
+                sanitised_args = [
+                    sanitise_string(arg) for arg in
+                    json.loads(arguments)["keywords"]
+                    ]
                 if sanitised_func_nm == "ExtractKeywordEntities":
-                    # Pydantic will raise if keywords do not conform to schema
-                    extracted_terms = ExtractKeywordEntities(keywords=sanitised_args)
+                    # Pydantic will raise if keywords violate schema rules
+                    extracted_terms = ExtractKeywordEntities(
+                        keywords=sanitised_args
+                        )
                     ui.notification_show(
-                        f"Searching database for keywords: {', '.join(extracted_terms.keywords)}"
+                        ("Searching database for keywords:"
+                        f" {', '.join(extracted_terms.keywords)}")
                         )
                     summarise_this = chroma_pipeline.execute_pipeline(
                         keywords=extracted_terms.keywords,
@@ -195,7 +201,11 @@ def server(input, output, session):
                         "content": response.choices[0].message.content
                         }
                     await chat.append_message(response)
-                    await chat.append_message(chroma_pipeline.chat_ui_results)
+                    await chat.append_message(
+                        {
+                            "role": "asisstant",
+                            "content": chroma_pipeline.chat_ui_results
+                            })
                     stream.append(meta_resp)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
