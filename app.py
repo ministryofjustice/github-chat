@@ -87,7 +87,6 @@ app_ui = ui.page_fillable(
                 f"Chat with {APP_LLM}",
                 ui.chat_ui(
                     id="chat",
-                    placeholder="Enter some keywords",
                     format="openai"
                 ),
             ),

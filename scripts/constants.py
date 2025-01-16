@@ -20,9 +20,11 @@ STOP_WORDS = [
 
 APP_SYS_PROMPT = f"""
 {SYS_PROMPT}  If the user asks about GitHub repositories, use the supplied
-tools to assist them. Extract apparent keywords from their latest prompt
-only, in order to use in the database search. Ensure that you ignore the
-following stopwords: {", ".join(STOP_WORDS)}
+tools to assist them. Extract apparent keywords from the user's latest
+prompt only, in order to use in the database search. Ensure that you ignore
+the following stopwords: {", ".join(STOP_WORDS)}. Ensure that you extract
+all clear keywords apart from the stopwords, pay attention to user prompts
+that ask for several topics of interest, ensure that you extract them all.
 """.replace("\n", " ").replace("  ", "")
 
 SUMMARY_PROMPT = """The details of an MoJ GitHub repository follow, within
@@ -49,7 +51,7 @@ Distance: {distance}\n
 AI Summary: {model_summary}
 """
 
-WELCOME_MSG = "Hi! Perform semantic search with MoJ GitHub repos."
+WELCOME_MSG = "Hi! Ask me about our MoJ GitHub repos."
 
 META_PROMPT = """
 You are provided with all of my results below in the triple-backtick
