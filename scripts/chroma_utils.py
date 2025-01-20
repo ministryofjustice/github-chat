@@ -1,6 +1,7 @@
 """Utilities for working with chromadb"""
 from collections import OrderedDict
 import datetime
+from itertools import islice
 from pathlib import Path
 import re
 from typing import List, Union
@@ -201,7 +202,9 @@ class ChromaDBPipeline:
         self.results = results
         return results
     
-    def filter_results(self, dist_thresh:float) -> OrderedDict:
+    def filter_results(
+        self, dist_thresh:float, n_results:int=None,
+        ) -> OrderedDict:
         """
         Filters the results based on a distance threshold.
 
@@ -210,6 +213,9 @@ class ChromaDBPipeline:
         dist_thresh: float
             The distance threshold above which results will be filtered
             out.
+        n_results: int
+            If an integer is passed, the output will be filtered to this
+            number of results. Defaults to None.
 
         Returns
         -------
@@ -263,8 +269,18 @@ class ChromaDBPipeline:
                 key=lambda item: item[1].get("distance")
                 )
             )
-        self.results = sorted_results
-        return sorted_results
+        if n_results:
+            filtered_sorted = OrderedDict(
+                islice(sorted_results.items(), n_results)
+                )
+            self.total_removed += (
+                len(sorted_results) - len(filtered_sorted)
+                )
+            self.results = filtered_sorted
+            return filtered_sorted
+        else:
+            self.results = sorted_results
+            return sorted_results
 
     def respond_with_db_results(self, sanitised_prompt:str) -> dict:
         """
@@ -380,7 +396,10 @@ class ChromaDBPipeline:
         self.get_latest_chroma_collection()
         self.get_data_vintage()
         self.query_collection(n_results=n_results)
-        self.filter_results(dist_thresh=distance_threshold)
+        self.filter_results(
+            dist_thresh=distance_threshold,
+            n_results=n_results
+            )
         return self.respond_with_db_results(
             sanitised_prompt=sanitised_prompt
             )
