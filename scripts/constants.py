@@ -25,6 +25,17 @@ prompt only, in order to use in the database search. Ensure that you ignore
 the following stopwords: {", ".join(STOP_WORDS)}. Ensure that you extract
 all clear keywords apart from the stopwords, pay attention to user prompts
 that ask for several topics of interest, ensure that you extract them all.
+Here are some example user prompts and the expectations for the key words
+to be extracted:
+
+User: "Are there any repos about probation, sentencing or prisons"
+
+Extracted keywords: [probation, sentencing, prisons]
+
+User: "Do we have any Ministry of Justice repositories about crime, crime
+reduction or recidivism?"
+
+Extracted keywords: [crime, reduction, recidivism]
 """.replace("\n", " ").replace("  ", "")
 
 SUMMARY_PROMPT = """The details of an MoJ GitHub repository follow, within
