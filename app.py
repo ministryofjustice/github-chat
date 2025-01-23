@@ -80,7 +80,7 @@ app_ui = ui.page_fillable(
             "Model Parameters",
             ui.input_action_button(
                 id="flush_chat",
-                label="Clear Chats",
+                label="Clear Chat",
             ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
