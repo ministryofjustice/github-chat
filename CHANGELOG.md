@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Clear chat button wipes messages.
+
 ### Changed
 
 - System prompt uses few shot to improve entity extraction of keywords in
