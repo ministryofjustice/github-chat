@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Clear chat button wipes messages.
+- Chat is re-initialised when the session is flushed on page refresh.
+
 ### Changed
 
 - System prompt uses few shot to improve entity extraction of keywords in

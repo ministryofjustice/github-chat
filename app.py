@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import logging
 from pathlib import Path
@@ -5,14 +6,11 @@ from pathlib import Path
 import dotenv
 import openai
 from pyprojroot import here
-from shiny import App, ui
+from shiny import App, reactive, ui
 
 from scripts.app_config import APP_LLM
+from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
-from scripts.constants import (
-    APP_SYS_PROMPT,
-    WELCOME_MSG
-)
 from scripts.custom_tools import ExtractKeywordEntities, toolbox
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
@@ -27,10 +25,8 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler(here("logs/app.log"))],
     )
-
-system_prompt = {"role": "system", "content": APP_SYS_PROMPT}
-stream = [system_prompt]
-stream.append({"role": "assistant", "content": WELCOME_MSG})
+stream = []
+_init_stream(_stream=stream)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
 chroma_pipeline = ChromaDBPipeline()
@@ -40,7 +36,6 @@ vintage = chroma_pipeline.data_vintage
 # Startup ends ============================================================
 
 app_ui = ui.page_fillable(
-
     ui.head_content(
         ui.tags.link(
             rel="icon", type="image/svg", href="favicon.svg"
@@ -78,6 +73,10 @@ app_ui = ui.page_fillable(
     ui.layout_sidebar(
         ui.sidebar(
             "Model Parameters",
+            ui.input_action_button(
+                id="flush_chat",
+                label="Clear Chat",
+            ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
             bg="#f0e3ff"
@@ -100,11 +99,22 @@ app_ui = ui.page_fillable(
 
 
 def server(input, output, session):
+
     chat = ui.Chat(
         id="chat",
         messages=stream,
         tokenizer=None
     )
+
+
+    @reactive.Effect
+    @reactive.event(input.flush_chat)
+    async def clear_chats():
+        """Erase all user & assistant response content from chat stream"""
+        # wipe to sys & welcome msg only
+        _init_stream(_stream=stream)
+        await chat.clear_messages()
+        await chat.append_message(stream[-1]) 
 
 
     @chat.on_user_submit
@@ -206,5 +216,13 @@ def server(input, output, session):
                             "content": chroma_pipeline.chat_ui_results
                             })
                     stream.append(meta_resp)
+ 
+
+    def reset_chat():
+        """Call this when session is flushed to wipe messages to scratch"""
+        _init_stream(_stream=stream)
+
+
+    session.on_flush(reset_chat, once=False)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
