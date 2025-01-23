@@ -79,3 +79,15 @@ label {
 /* .bi-arrow-up-circle-fill {
     fill: #ff007c;
 } */
+
+#flush_chat {
+    background-color: white;
+    color: #3d1265;
+    border: 1px solid #ff007c;
+}
+
+#flush_chat:hover {
+    background-color: #ff007c;
+    border-color: #ff007c;
+    color: white;
+}
