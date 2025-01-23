@@ -30,9 +30,23 @@ logging.basicConfig(
     )
 
 system_prompt = {"role": "system", "content": APP_SYS_PROMPT}
-stream = [system_prompt]
 welcome = {"role": "assistant", "content": WELCOME_MSG}
-stream.append(welcome)
+
+
+def _init_stream(_stream:list, sys:str=system_prompt, wlcm:str=welcome):
+    """Internal utility for initialising the chat stream.
+    
+    Can be used at app startup, when the user flushes the chat on action
+    button, or when the user refreshes the window.
+    """
+    _stream
+    _stream.clear()
+    _stream.append(sys)
+    _stream.append(wlcm)
+
+
+stream = []
+_init_stream(_stream=stream)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
 chroma_pipeline = ChromaDBPipeline()
@@ -118,9 +132,7 @@ def server(input, output, session):
     async def clear_chats():
         """Erase all user & assistant response content from chat stream"""
         # wipe to sys & welcome msg only
-        stream.clear()
-        stream.append(system_prompt)
-        stream.append(welcome)
+        _init_stream(_stream=stream)
         await chat.clear_messages()
         await chat.append_message(welcome) 
 
@@ -226,13 +238,11 @@ def server(input, output, session):
                     stream.append(meta_resp)
  
 
-    def destroy_chat():
+    def reset_chat():
         """Call this when session is flushed to wipe messages to scratch"""
-        stream.clear()
-        stream.append(system_prompt)
-        stream.append(welcome)
+        _init_stream(_stream=stream)
 
 
-    session.on_flush(destroy_chat, once=False)
+    session.on_flush(reset_chat, once=False)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
