@@ -9,11 +9,8 @@ from pyprojroot import here
 from shiny import App, reactive, ui
 
 from scripts.app_config import APP_LLM
+from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
-from scripts.constants import (
-    APP_SYS_PROMPT,
-    WELCOME_MSG
-)
 from scripts.custom_tools import ExtractKeywordEntities, toolbox
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
@@ -28,23 +25,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler(here("logs/app.log"))],
     )
-
-system_prompt = {"role": "system", "content": APP_SYS_PROMPT}
-welcome = {"role": "assistant", "content": WELCOME_MSG}
-
-
-def _init_stream(_stream:list, sys:str=system_prompt, wlcm:str=welcome):
-    """Internal utility for initialising the chat stream.
-    
-    Can be used at app startup, when the user flushes the chat on action
-    button, or when the user refreshes the window.
-    """
-    _stream
-    _stream.clear()
-    _stream.append(sys)
-    _stream.append(wlcm)
-
-
 stream = []
 _init_stream(_stream=stream)
 
@@ -134,7 +114,7 @@ def server(input, output, session):
         # wipe to sys & welcome msg only
         _init_stream(_stream=stream)
         await chat.clear_messages()
-        await chat.append_message(welcome) 
+        await chat.append_message(stream[-1]) 
 
 
     @chat.on_user_submit
