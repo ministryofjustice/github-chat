@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Clear chat button wipes messages.
+- Chat is re-initialised when the session is flushed on page refresh.
 
 ### Changed
 
