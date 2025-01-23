@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import logging
 from pathlib import Path
@@ -223,5 +224,15 @@ def server(input, output, session):
                             "content": chroma_pipeline.chat_ui_results
                             })
                     stream.append(meta_resp)
+ 
+
+    def destroy_chat():
+        """Call this when session is flushed to wipe messages to scratch"""
+        stream.clear()
+        stream.append(system_prompt)
+        stream.append(welcome)
+
+
+    session.on_flush(destroy_chat, once=False)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
