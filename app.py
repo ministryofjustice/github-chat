@@ -5,7 +5,7 @@ from pathlib import Path
 import dotenv
 import openai
 from pyprojroot import here
-from shiny import App, ui
+from shiny import App, reactive, ui
 
 from scripts.app_config import APP_LLM
 from scripts.chroma_utils import ChromaDBPipeline
@@ -30,7 +30,8 @@ logging.basicConfig(
 
 system_prompt = {"role": "system", "content": APP_SYS_PROMPT}
 stream = [system_prompt]
-stream.append({"role": "assistant", "content": WELCOME_MSG})
+welcome = {"role": "assistant", "content": WELCOME_MSG}
+stream.append(welcome)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
 chroma_pipeline = ChromaDBPipeline()
@@ -40,7 +41,6 @@ vintage = chroma_pipeline.data_vintage
 # Startup ends ============================================================
 
 app_ui = ui.page_fillable(
-
     ui.head_content(
         ui.tags.link(
             rel="icon", type="image/svg", href="favicon.svg"
@@ -78,6 +78,10 @@ app_ui = ui.page_fillable(
     ui.layout_sidebar(
         ui.sidebar(
             "Model Parameters",
+            ui.input_action_button(
+                id="flush_chat",
+                label="Clear Chats",
+            ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
             bg="#f0e3ff"
@@ -100,11 +104,24 @@ app_ui = ui.page_fillable(
 
 
 def server(input, output, session):
+
     chat = ui.Chat(
         id="chat",
         messages=stream,
         tokenizer=None
     )
+
+
+    @reactive.Effect
+    @reactive.event(input.flush_chat)
+    async def clear_chats():
+        """Erase all user & assistant response content from chat stream"""
+        # wipe to sys & welcome msg only
+        stream.clear()
+        stream.append(system_prompt)
+        stream.append(welcome)
+        await chat.clear_messages()
+        await chat.append_message(welcome) 
 
 
     @chat.on_user_submit
