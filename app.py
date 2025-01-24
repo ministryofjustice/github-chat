@@ -15,7 +15,7 @@ from scripts.icons import question_circle
 from scripts.custom_tools import ExtractKeywordEntities, toolbox
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
-    feedback_tab, more_info_tab, numeric_inputs
+    feedback_tab, more_info_tab, inputs_with_popovers
 )
 from scripts.string_utils import sanitise_string
 
@@ -94,12 +94,11 @@ app_ui = ui.page_fillable(
                 label="Clear Chat",
                 style="position: relative; bottom: 60px;",
             ),
-            # unpack all numeric inputs from custom_components
             ui.span(
-            *numeric_inputs,
-            style="position: relative; bottom: 70px;",),
+            *inputs_with_popovers,
+            style="position: relative; bottom: 80px;",),
             bg="#f0e3ff"
-            ),  
+            ), 
         ui.navset_tab(
             ui.nav_panel(
                 f"Chat with {APP_LLM}",
