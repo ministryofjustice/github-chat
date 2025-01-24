@@ -84,7 +84,7 @@ app_ui = ui.page_fillable(
                 """
                 Re-initialises the chat stream to the system prompt and
                 welcome message.""",
-                placement="auto",
+                placement="top",
                 id="clear_chat_popover",
 
             ),
@@ -95,7 +95,9 @@ app_ui = ui.page_fillable(
                 style="position: relative; bottom: 60px;",
             ),
             # unpack all numeric inputs from custom_components
+            ui.span(
             *numeric_inputs,
+            style="position: relative; bottom: 70px;",),
             bg="#f0e3ff"
             ),  
         ui.navset_tab(
