@@ -112,3 +112,7 @@ label {
     border-radius: 0.5rem;
     position: relative;
 }
+
+.popover-arrow {
+    display: none !important;
+}
