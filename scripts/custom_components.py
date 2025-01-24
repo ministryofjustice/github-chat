@@ -95,7 +95,7 @@ def feedback_tab():
     )
 
 
-NUMERIC_INPUTS = [
+NUMERIC_PARAMS = [
     {"id": "selected_n", "label": "n results", "value": 5, "min": 1, "max": None, "step": 1},
     {"id": "dist_thresh", "label": "Distance threshold", "value": 2.0, "min": 0.0, "max": 2.0, "step": 0.1},
     {"id": "temp", "label": "Model temperature", "value": 0.7, "min": 0.0, "max": 1.5, "step": 0.1},
@@ -103,17 +103,15 @@ NUMERIC_INPUTS = [
     {"id": "freq_pen", "label": "Frequency penalty", "value": 0.0, "min": -2.0, "max": 2.0, "step": 0.1},
     {"id": "max_tokens", "label": "Max tokens", "value": None, "min": 50, "max": 16_384, "step": 50},
 ]
-numeric_inputs = [ui.input_numeric(**_in) for _in in NUMERIC_INPUTS]
+numeric_inputs = [ui.input_numeric(**_in) for _in in NUMERIC_PARAMS]
 _STYLE = "position: relative; top: 40px; left: 185px; z-index: 1;"
-CONTENT = "FOOBAR!!!"
-
 NUMERIC_INPUT_POPOVER_PARAMS = [
-    {"style": _STYLE, "content": CONTENT, "placement": "top", "id": "selected_n_popover",},
-    {"style": _STYLE, "content": CONTENT, "placement": "top", "id": "dist_thresh_popover",},
-    {"style": _STYLE, "content": CONTENT, "placement": "top", "id": "temp_popover",},
-    {"style": _STYLE, "content": CONTENT, "placement": "top", "id": "pres_pen_popover",},
-    {"style": _STYLE, "content": CONTENT, "placement": "top", "id": "freq_pen_popover",},
-    {"style": _STYLE, "content": CONTENT, "placement": "top", "id": "max_tokens_popover",},
+    {"style": _STYLE, "placement": "top", "id": "selected_n_popover",},
+    {"style": _STYLE, "placement": "top", "id": "dist_thresh_popover",},
+    {"style": _STYLE, "placement": "top", "id": "temp_popover",},
+    {"style": _STYLE, "placement": "top", "id": "pres_pen_popover",},
+    {"style": _STYLE, "placement": "top", "id": "freq_pen_popover",},
+    {"style": _STYLE, "placement": "top", "id": "max_tokens_popover",},
 ]
 
 CONTENT_STRINGS = [
@@ -144,7 +142,8 @@ def _format_popover(
     )
 
 numeric_popovers = [
-    _format_popover(popover_params=_in, _content=CONTENT_STRINGS[i]) for i, _in in enumerate(NUMERIC_INPUT_POPOVER_PARAMS)
+    _format_popover(popover_params=_in, _content=CONTENT_STRINGS[i])
+    for i, _in in enumerate(NUMERIC_INPUT_POPOVER_PARAMS)
     ]
 
 inputs_with_popovers = list(zip(numeric_popovers, numeric_inputs))
