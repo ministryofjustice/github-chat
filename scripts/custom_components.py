@@ -83,7 +83,7 @@ def feedback_tab():
             <a href=https://docs.github.com/en/graphql target=_blank>GitHub GraphQL API</a>
             could resolve this issue.
             * The model no longer streams responses, since
-            <a href=https://github.com/ministryofjustice/github-chat/blob/main/CHANGELOG.md#020---2024-01-15  target=_blank>version 0.2.0</a>,
+            <a href=https://github.com/ministryofjustice/github-chat/blob/main/CHANGELOG.md#020---2025-01-15  target=_blank>version 0.2.0</a>,
             the LLM is able to extract key terms from the user's prompts in
             order to query the vector store. Implementing this feature with
             streamed responses has proven to be difficult.  
