@@ -11,6 +11,7 @@ from shiny import App, reactive, ui
 from scripts.app_config import APP_LLM
 from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
+from scripts.icons import question_circle
 from scripts.custom_tools import ExtractKeywordEntities, toolbox
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
@@ -73,9 +74,25 @@ app_ui = ui.page_fillable(
     ui.layout_sidebar(
         ui.sidebar(
             "Model Parameters",
+
+            ui.popover(
+                ui.span(
+                    question_circle,
+                    style="position: relative; bottom: 28px; left: 185px; z-index: 1;",
+
+                ),
+                """
+                Re-initialises the chat stream to the system prompt and
+                welcome message.""",
+                placement="auto",
+                id="clear_chat_popover",
+
+            ),
+
             ui.input_action_button(
                 id="flush_chat",
                 label="Clear Chat",
+                style="position: relative; bottom: 60px;",
             ),
             # unpack all numeric inputs from custom_components
             *numeric_inputs,
