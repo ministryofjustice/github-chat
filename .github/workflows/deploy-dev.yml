@@ -16,9 +16,12 @@ jobs:
       - name: Clone Data Repository
         run: |
           git clone https://github.com/ministryofjustice/github-chat-data.git ./tmp-dat
-          echo ls ./tmp-dat
+          cp -r ./tmp-dat/nomic-embeddings ./data/
+          rm -r ./tmp-dat
         env:
           REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+      - name: Print data dir contents
+        run: ls ./data/nomic-embeddings/
             
       # - name: Configure rsconnect
       #   run: |
