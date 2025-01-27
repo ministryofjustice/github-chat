@@ -24,8 +24,8 @@ jobs:
       - name: Create app .env file
         run : |
           touch .env
-          echo GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} >> .env
-          echo NOMIC_TOKEN=${{ secrets.NOMIC_TOKEN }} >> .env        
+          echo OPENAI_KEY=${{ secrets.OPENAI_KEY }} >> .env
+          echo NOMIC_KEY=${{ secrets.NOMIC_KEY }} >> .env        
       - name: Configure rsconnect
         run: |
           rsconnect add --account ${{ vars.SHINYAPPS_USERNAME }} --name rsconnect-server --token ${{ secrets.SHINYAPPS_TOKEN }} --secret ${{ secrets.SHINYAPPS_SECRET }}
