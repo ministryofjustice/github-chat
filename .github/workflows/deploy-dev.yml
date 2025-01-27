@@ -15,8 +15,8 @@ jobs:
       #     pip install -r requirements-dev.txt
       - name: Clone Data Repository
         run: |
-          git clone https://github.com/ministryofjustice/github-chat-data.git ./data/
-          ls ./data/nomic-embeddings/
+          git clone https://github.com/ministryofjustice/github-chat-data.git ./
+          ls .
         env:
           REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
             
