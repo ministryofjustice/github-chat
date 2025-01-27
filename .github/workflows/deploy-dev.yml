@@ -20,7 +20,12 @@ jobs:
           cp -r ./tmp-dat/nomic-embeddings ./data/
           rm -r ./tmp-dat
         env:
-          REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }} # GitHub PAT           
+          REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }} # GitHub PAT
+      - name: Create app .env file
+        run : |
+          touch .env
+          echo GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} >> .env
+          echo NOMIC_TOKEN=${{ secrets.NOMIC_TOKEN }} >> .env        
       - name: Configure rsconnect
         run: |
           rsconnect add --account ${{ vars.SHINYAPPS_USERNAME }} --name rsconnect-server --token ${{ secrets.SHINYAPPS_TOKEN }} --secret ${{ secrets.SHINYAPPS_SECRET }}
