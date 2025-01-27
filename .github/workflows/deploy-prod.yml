@@ -1,0 +1,36 @@
+name: Deploy App to Dev
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: 3.12
+          cache: "pip"
+      - name: Install dependencies # just rsconnect for deployment
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt 
+      - name: Clone Data Repository
+        run: |
+          git clone https://github.com/ministryofjustice/github-chat-data.git ./tmp-dat
+          cp -r ./tmp-dat/nomic-embeddings ./data/
+          rm -r ./tmp-dat
+        env:
+          REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }} # GitHub PAT
+      - name: Create app .env file
+        run : |
+          touch .env
+          echo OPENAI_KEY=${{ secrets.OPENAI_KEY }} >> .env
+          echo NOMIC_KEY=${{ secrets.NOMIC_KEY }} >> .env        
+      - name: Configure rsconnect
+        run: |
+          rsconnect add --account ${{ vars.SHINYAPPS_USERNAME }} --name rsconnect-server --token ${{ secrets.SHINYAPPS_TOKEN }} --secret ${{ secrets.SHINYAPPS_SECRET }}
+      - name: Deploy to rsconnect
+        run: |
+          rsconnect deploy shiny --app-id ${{ secrets.APP_ID }} ./ --name rsconnect-server  --title moj-github-chat
