@@ -16,7 +16,7 @@ jobs:
       - name: Clone Data Repository
         run: |
           git clone https://github.com/ministryofjustice/github-chat-data.git ./tmp-dat
-          ls ./tmp-dat
+          echo ls ./tmp-dat
         env:
           REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
             
