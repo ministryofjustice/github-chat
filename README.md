@@ -12,6 +12,15 @@ This project uses public repository metadata from the GitHub organisations
 [ministryofjustice](https://github.com/ministryofjustice) and
 [moj-analytical-services](https://github.com/moj-analytical-services).
 
+Public data for the app lives in this
+[GitHub repo](https://github.com/ministryofjustice/github-chat-data). Note
+that on raising a PR or creating a tag release in this repo, an automated
+deployment will be initiated. This uses the data stored in the
+`github-chat-data` repo (head commit) to deploy to shinyapps.io.
+
+* Pull Request -> Deploys to development.
+* Tag release -> Deploys to live. 
+
 ### Application
 
 This is a basic
