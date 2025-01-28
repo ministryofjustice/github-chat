@@ -1,18 +1,20 @@
 import datetime as dt
+import io
 import json
 import logging
 from pathlib import Path
 
 import dotenv
 import openai
+import pandas as pd
 from pyprojroot import here
-from shiny import App, reactive, ui
+from shiny import App, reactive, render, ui
 
 from scripts.app_config import APP_LLM
 from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
 from scripts.icons import question_circle
-from scripts.custom_tools import ExtractKeywordEntities, toolbox
+from scripts.custom_tools import ExtractKeywordEntities, ExportDataToTSV, toolbox
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
     feedback_tab, more_info_tab, inputs_with_popovers
@@ -96,7 +98,9 @@ app_ui = ui.page_fillable(
             ),
             ui.span(
             *inputs_with_popovers,
-            style="position: relative; bottom: 80px;",),
+            style="position: relative; bottom: 80px;",
+            ),
+            ui.download_button("download_df", "Download DataFrame", class_="btn-primary"),
             bg="#f0e3ff"
             ), 
         ui.navset_tab(
@@ -192,11 +196,11 @@ def server(input, output, session):
                 function_name = tool_call[0].function.name
                 arguments = tool_call[0].function.arguments
                 sanitised_func_nm = sanitise_string(function_name)
-                sanitised_args = [
-                    sanitise_string(arg) for arg in
-                    json.loads(arguments)["keywords"]
-                    ]
                 if sanitised_func_nm == "ExtractKeywordEntities":
+                    sanitised_args = [
+                        sanitise_string(arg) for arg in
+                        json.loads(arguments)["keywords"]
+                    ]
                     # Pydantic will raise if keywords violate schema rules
                     extracted_terms = ExtractKeywordEntities(
                         keywords=sanitised_args
@@ -239,6 +243,15 @@ def server(input, output, session):
     def reset_chat():
         """Call this when session is flushed to wipe messages to scratch"""
         _init_stream(_stream=stream)
+
+
+    @render.download(filename="download.tsv")
+    def download_df():
+        """Output current export table to tsv"""
+        df = chroma_pipeline.export_table
+        with io.StringIO() as buf:
+            df.to_csv(buf, sep="\t", index=False)
+            yield buf.getvalue()
 
 
     session.on_flush(reset_chat, once=False)
