@@ -9,6 +9,7 @@ from typing import List, Union
 import chromadb
 import dotenv
 from nomic import embed, login
+import pandas as pd
 from pyprojroot import here
 
 from scripts.app_config import EMBEDDINGS_MODEL
@@ -49,6 +50,11 @@ class ChromaDBPipeline:
         Embeddings generated from keywords.
     results : Optional[dict]
         Results from querying the collection.
+    current_keywords: list
+        The list of keywords extracted from the user's latest prompt.
+    export_table : pd.DataFrame
+        Tabular form of results for export to Excel. This will extend as
+        the user makes additional requests.
 
     Methods
     -------
@@ -87,6 +93,8 @@ class ChromaDBPipeline:
         self.data_vintage = None
         self.embeddings = None
         self.results = None
+        self.current_keywords = []
+        self.export_table = pd.DataFrame()
 
     def embed_keywords(
         self,
@@ -112,7 +120,7 @@ class ChromaDBPipeline:
             A dictionary containing the embeddings of the provided
             keywords.
         """
-
+        self.current_keywords = keywords
         if not self.nomic_logged_in:
             self._login_nomic()
             self.nomic_logged_in = True
@@ -330,6 +338,7 @@ class ChromaDBPipeline:
             )
             date_out = f"{formatted_date} ({days_ago} days ago)."
             meta_dict = {
+                "search_terms": ", ".join(self.current_keywords),
                 "org_nm": metas.get("org_nm"),
                 "repo_nm": nm[0] if nm else None,
                 "html_url": url[0] if url else None,
@@ -341,11 +350,16 @@ class ChromaDBPipeline:
                 "distance": dist, 
                 "model_summary": ai_summary[0] if ai_summary else None,
             }
+            self.export_table = pd.concat(
+                [self.export_table, pd.DataFrame(meta_dict, index=[0])],
+                ignore_index=True, axis=0,
+            )
             ui_resp = format_results(
                 db_result=meta_dict,
                 )
             ui_resps.append(ui_resp)
-
+        
+        self.export_table.reset_index(drop=True, inplace=True)
         repo_results = "***".join(ui_resps)
         self.chat_ui_results = repo_results
         summary_prompt = format_meta_prompt(

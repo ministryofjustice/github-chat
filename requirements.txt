@@ -3,6 +3,7 @@ chromadb==0.5.23
 faicons==0.2.2
 nomic==3.3.4
 openai==1.57.3
+pandas==2.2.3
 pydantic==2.10.3
 pyprojroot==0.3.0
 python-dotenv==1.0.1
