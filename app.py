@@ -108,8 +108,7 @@ app_ui = ui.page_fillable(
 
                 ),
                 """
-                Exports the results of your repo searches to file. Will
-                refuse if you have not asked for any repo details. You can
+                Exports the results of your repo searches to file. You can
                 also ask the model to do this for you by typing in the
                 chat.""",
                 placement="top",
