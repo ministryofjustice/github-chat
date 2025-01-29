@@ -282,8 +282,9 @@ def server(input, output, session):
                     
 
     def reset_chat():
-        """Call this when session is flushed to wipe messages to scratch"""
+        """Call this when session is ended to wipe messages to scratch"""
         _init_stream(_stream=stream)
+        chroma_pipeline.export_table = pd.DataFrame()
 
 
     @render.download(filename=EXPORT_FILENM)
@@ -298,6 +299,6 @@ def server(input, output, session):
                         )
 
 
-    session.on_flush(reset_chat, once=False)
+    session.on_ended(reset_chat)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
