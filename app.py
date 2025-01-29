@@ -299,6 +299,7 @@ def server(input, output, session):
                         )
 
 
+    session.on_flushed(reset_chat, once=True)
     session.on_ended(reset_chat)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
