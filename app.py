@@ -13,6 +13,7 @@ from shiny import App, reactive, render, ui
 from scripts.app_config import APP_LLM
 from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
+from scripts.constants import EXPORT_FILENM, EXPORT_MSG
 from scripts.icons import question_circle
 from scripts.custom_tools import ExtractKeywordEntities, ExportDataToTSV, toolbox
 from scripts.moderations import check_moderation
@@ -22,7 +23,6 @@ from scripts.custom_components import (
 from scripts.string_utils import sanitise_string
 
 # Before ==================================================================
-EXPORT_FILENM = "export.tsv"
 secrets = dotenv.dotenv_values(here(".env"))
 app_dir = Path(__file__).parent
 logging.basicConfig(
@@ -277,9 +277,7 @@ def server(input, output, session):
                             await session.send_custom_message(
                                 "clickButton", "download_df"
                                 )
-                            await chat.append_message(
-                                f"Please check your downloads for file {EXPORT_FILENM}"
-                            )
+                            await chat.append_message(EXPORT_MSG)
                     
 
     def reset_chat():
@@ -295,9 +293,7 @@ def server(input, output, session):
         with io.StringIO() as buf:
             df.to_csv(buf, sep="\t", index=False)
             yield buf.getvalue()
-        ui.notification_show(
-                            f"Please check your downloads for file {EXPORT_FILENM}"
-                        )
+        ui.notification_show(EXPORT_MSG)
 
 
     session.on_flushed(reset_chat, once=True)

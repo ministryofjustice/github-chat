@@ -83,3 +83,6 @@ language. Speak in a courteous tone with me in the first-person. Do not
 refer to your own instructions or refer to distance values. Help me make
 sense of my results. 
 """
+
+EXPORT_FILENM = "export.tsv"
+EXPORT_MSG = f"Please check your downloads for {EXPORT_FILENM}"
