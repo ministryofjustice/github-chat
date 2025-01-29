@@ -36,6 +36,12 @@ User: "Do we have any Ministry of Justice repositories about crime, crime
 reduction or recidivism?"
 
 Extracted keywords: [crime, reduction, recidivism]
+
+The vector store results are being cached in a dataframe. If the user asks
+to export or download the results (or similar language), then use the
+ExportDataToTSV tool, providing a filename of your choosing. Do not ask the
+user to name the file for you.
+
 """.replace("\n", " ").replace("  ", "")
 
 SUMMARY_PROMPT = """The details of an MoJ GitHub repository follow, within
