@@ -267,10 +267,9 @@ def server(input, output, session):
                     dat = chroma_pipeline.export_table
                     if len(dat) == 0:
                         await chat.append_message(
-                            "No results found, please ask for repos first"
+                            "No results found, please ask for repos first."
                         )
                     else:
-                        ui.notification_show("Exporting data...")
                         sanitised_filenm = sanitise_string(json.loads(arguments)["filename"]).replace(" ", "")
                         # pydantic will raise if doesn't conform to spec
                         filenm = ExportDataToTSV(filename=sanitised_filenm)
@@ -294,6 +293,9 @@ def server(input, output, session):
         with io.StringIO() as buf:
             df.to_csv(buf, sep="\t", index=False)
             yield buf.getvalue()
+        ui.notification_show(
+                            f"Please check your downloads for file {EXPORT_FILENM}"
+                        )
 
 
     session.on_flush(reset_chat, once=False)
