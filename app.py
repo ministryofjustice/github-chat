@@ -101,7 +101,22 @@ app_ui = ui.page_fillable(
             *inputs_with_popovers,
             style="position: relative; bottom: 80px;",
             ),
-            ui.download_button("download_df", "Download Table", class_="btn-primary", style="position: relative; bottom: 60px;",),
+            ui.popover(
+                ui.span(
+                    question_circle,
+                    style="position: relative; bottom: 68px; left: 185px; z-index: 1;",
+
+                ),
+                """
+                Exports the results of your repo searches to file. Will
+                refuse if you have not asked for any repo details. You can
+                also ask the model to do this for you by typing in the
+                chat.""",
+                placement="top",
+                id="download_button_popover",
+
+            ),
+            ui.download_button("download_df", "Download Table", class_="btn-primary", style="position: relative; bottom: 100px;",),
             ui.tags.script(
                     """
                     Shiny.addCustomMessageHandler("clickButton", function(id) {
