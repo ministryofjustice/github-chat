@@ -101,7 +101,7 @@ app_ui = ui.page_fillable(
             *inputs_with_popovers,
             style="position: relative; bottom: 80px;",
             ),
-            ui.download_button("download_df", "Download DataFrame", class_="btn-primary"),
+            ui.download_button("download_df", "Download Table", class_="btn-primary", style="position: relative; bottom: 60px;",),
             ui.tags.script(
                     """
                     Shiny.addCustomMessageHandler("clickButton", function(id) {
