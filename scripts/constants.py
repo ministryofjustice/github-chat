@@ -19,14 +19,14 @@ STOP_WORDS = [
 ]
 
 APP_SYS_PROMPT = f"""
-{SYS_PROMPT}  If the user asks about GitHub repositories, use the supplied
-tools to assist them. Extract apparent keywords from the user's latest
-prompt only, in order to use in the database search. Ensure that you ignore
-the following stopwords: {", ".join(STOP_WORDS)}. Ensure that you extract
-all clear keywords apart from the stopwords, pay attention to user prompts
-that ask for several topics of interest, ensure that you extract them all.
-Here are some example user prompts and the expectations for the key words
-to be extracted:
+{SYS_PROMPT}  If the user asks about GitHub repositories, use the
+ExtractKeywordEntities tool to assist them. Extract apparent keywords from
+the user's latest prompt only, in order to use in the database search.
+Ensure that you ignore the following stopwords: {", ".join(STOP_WORDS)}.
+Ensure that you extract all clear keywords apart from the stopwords, pay
+attention to user prompts that ask for several topics of interest, ensure
+that you extract them all. Here are some example user prompts and the
+expectations for the key words to be extracted:
 
 User: "Are there any repos about probation, sentencing or prisons"
 
@@ -38,9 +38,9 @@ reduction or recidivism?"
 Extracted keywords: [crime, reduction, recidivism]
 
 The vector store results are being cached in a dataframe. If the user asks
-to export or download the results (or similar language), then use the
-ExportDataToTSV tool, providing a filename of your choosing. Do not ask the
-user to name the file for you.
+to export or download the results, then use the ExportDataToTSV tool,
+providing a filename of your choosing. Do not ask the user to name the file
+for you.
 
 """.replace("\n", " ").replace("  ", "")
 
