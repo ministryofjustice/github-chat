@@ -22,16 +22,13 @@ class ExtractKeywordEntities(BaseModel):
 class ExportDataToTSV(BaseModel):
     """Export cached data to a TSV file.
 
-    Choose a filename that makes sense based upon the user's queries.
-
     Attributes
     ----------
-    filename : str
-        The name of the TSV file to which data will be exported. Must end
-        in a ".tsv" suffix.
+    export : bool
+        When True, file export will begin.
     """
 
-    filename: str
+    export: bool
 
 toolbox = [
     pydantic_function_tool(ExtractKeywordEntities),

@@ -264,21 +264,22 @@ def server(input, output, session):
                     stream.append(meta_resp)
 
                 elif sanitised_func_nm == "ExportDataToTSV":
-                    dat = chroma_pipeline.export_table
-                    if len(dat) == 0:
-                        await chat.append_message(
-                            "No results found, please ask for repos first."
-                        )
-                    else:
-                        sanitised_filenm = sanitise_string(json.loads(arguments)["filename"]).replace(" ", "")
-                        # pydantic will raise if doesn't conform to spec
-                        filenm = ExportDataToTSV(filename=sanitised_filenm)
-                        await session.send_custom_message(
-                            "clickButton", "download_df"
+                    should_export = json.loads(arguments)["export"]
+                    if should_export:
+                        dat = chroma_pipeline.export_table
+                        if len(dat) == 0:
+                            await chat.append_message(
+                                "No results found, please ask for repos first."
                             )
-                        await chat.append_message(
-                            f"Please check your downloads for file {EXPORT_FILENM}"
-                        )
+                        else:
+                            # pydantic will raise if doesn't conform to spec
+                            ExportDataToTSV(export=should_export)
+                            await session.send_custom_message(
+                                "clickButton", "download_df"
+                                )
+                            await chat.append_message(
+                                f"Please check your downloads for file {EXPORT_FILENM}"
+                            )
                     
 
     def reset_chat():
