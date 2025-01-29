@@ -22,6 +22,7 @@ from scripts.custom_components import (
 from scripts.string_utils import sanitise_string
 
 # Before ==================================================================
+EXPORT_FILENM = "export.tsv"
 secrets = dotenv.dotenv_values(here(".env"))
 app_dir = Path(__file__).parent
 logging.basicConfig(
@@ -101,6 +102,14 @@ app_ui = ui.page_fillable(
             style="position: relative; bottom: 80px;",
             ),
             ui.download_button("download_df", "Download DataFrame", class_="btn-primary"),
+            ui.tags.script(
+                    """
+                    Shiny.addCustomMessageHandler("clickButton", function(id) {
+                        document.getElementById(id)?.click();
+                    });
+                    """
+                ),
+
             bg="#f0e3ff"
             ), 
         ui.navset_tab(
@@ -238,14 +247,32 @@ def server(input, output, session):
                             "content": chroma_pipeline.chat_ui_results
                             })
                     stream.append(meta_resp)
- 
+
+                elif sanitised_func_nm == "ExportDataToTSV":
+                    dat = chroma_pipeline.export_table
+                    if len(dat) == 0:
+                        await chat.append_message(
+                            "No results found, please ask for repos first"
+                        )
+                    else:
+                        ui.notification_show("Exporting data...")
+                        sanitised_filenm = sanitise_string(json.loads(arguments)["filename"]).replace(" ", "")
+                        # pydantic will raise if doesn't conform to spec
+                        filenm = ExportDataToTSV(filename=sanitised_filenm)
+                        await session.send_custom_message(
+                            "clickButton", "download_df"
+                            )
+                        await chat.append_message(
+                            f"Please check your downloads for file {EXPORT_FILENM}"
+                        )
+                    
 
     def reset_chat():
         """Call this when session is flushed to wipe messages to scratch"""
         _init_stream(_stream=stream)
 
 
-    @render.download(filename="download.tsv")
+    @render.download(filename=EXPORT_FILENM)
     def download_df():
         """Output current export table to tsv"""
         df = chroma_pipeline.export_table
