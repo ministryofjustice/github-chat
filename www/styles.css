@@ -84,6 +84,7 @@ label {
     background-color: white;
     color: #3d1265;
     border: 1px solid #ff007c;
+    transition: background-color 0.5s ease;
 }
 
 #flush_chat:hover {
@@ -92,7 +93,20 @@ label {
     color: white;
 }
 
-/* popover styles */
+#download_df {
+    background-color: white;
+    color: #3d1265;
+    border: 1px solid #ff007c;
+    transition: background-color 0.5s ease;
+}
+
+#download_df:hover {
+    background-color: #ff007c;
+    border-color: #ff007c;
+    color: white;
+}
+
+/* ------------------- popover styles -----------------------------------*/
 .bi-question-circle {
     width: 16px;
     height: 16px;
@@ -116,3 +130,4 @@ label {
 .popover-arrow {
     display: none !important;
 }
+/* ------------------- popover styles -----------------------------------*/
