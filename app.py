@@ -300,7 +300,8 @@ def server(input, output, session):
         ui.notification_show(EXPORT_MSG)
 
 
-    session.on_flushed(reset_chat, once=False)
+    session.on_flush(reset_chat, once=False)
+    session.on_flushed(wipe_export_table, once=True)
     session.on_ended(wipe_export_table)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
