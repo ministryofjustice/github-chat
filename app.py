@@ -86,7 +86,7 @@ app_ui = ui.page_fillable(
                 ),
                 """
                 Re-initialises the chat stream to the system prompt and
-                welcome message.""",
+                welcome message. Wipes the stored repo results table.""",
                 placement="top",
                 id="clear_chat_popover",
 
@@ -158,8 +158,9 @@ def server(input, output, session):
         """Erase all user & assistant response content from chat stream"""
         # wipe to sys & welcome msg only
         _init_stream(_stream=stream)
+        wipe_export_table()
         await chat.clear_messages()
-        await chat.append_message(stream[-1]) 
+        await chat.append_message(stream[-1])
 
 
     @chat.on_user_submit
