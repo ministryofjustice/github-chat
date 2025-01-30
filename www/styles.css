@@ -18,10 +18,6 @@ input[type="number"] {
     border-color: #ff007c;
 }
 
-/* .card {
-    border: 1px solid #ff007c;
-} */
-
 .collapse-icon {
     color: #ff007c;
 }
@@ -34,9 +30,9 @@ input[type="number"] {
 .nav.nav-tabs {
     position: -webkit-sticky; /* For Safari */
     position: sticky;
-    top: -25px; /* Adjust this value as needed */
-    z-index: 1000; /* Ensure it stays above other content */
-    background-color: white; /* Ensure it doesn't overlap with other content */
+    top: -25px;
+    z-index: 1000;
+    background-color: white; 
 }
 
 .nav-link {
@@ -58,16 +54,6 @@ textarea.form-control.textarea-autoresize {
 
 }
 
-#stream.form-check-input {
-    background-color: #f1f2f5;
-    border-color: #3d1265;
-}
-
-#stream.form-check-input:checked {
-    background-color: #3d1265;
-    border-color: #3d1265;
-}
-
 label {
     color: #3d1265;
 }
@@ -76,23 +62,20 @@ label {
     color: #3d1265;
 }
 
-/* .bi-arrow-up-circle-fill {
-    fill: #ff007c;
-} */
-
-#flush_chat {
+.btn {
     background-color: white;
     color: #3d1265;
     border: 1px solid #ff007c;
+    transition: background-color 0.5s ease;
 }
 
-#flush_chat:hover {
+.btn:hover {
     background-color: #ff007c;
     border-color: #ff007c;
     color: white;
 }
 
-/* popover styles */
+/* ------------------- popover styles -----------------------------------*/
 .bi-question-circle {
     width: 16px;
     height: 16px;
@@ -116,3 +99,4 @@ label {
 .popover-arrow {
     display: none !important;
 }
+/* ------------------- popover styles -----------------------------------*/

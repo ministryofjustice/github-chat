@@ -19,14 +19,14 @@ STOP_WORDS = [
 ]
 
 APP_SYS_PROMPT = f"""
-{SYS_PROMPT}  If the user asks about GitHub repositories, use the supplied
-tools to assist them. Extract apparent keywords from the user's latest
-prompt only, in order to use in the database search. Ensure that you ignore
-the following stopwords: {", ".join(STOP_WORDS)}. Ensure that you extract
-all clear keywords apart from the stopwords, pay attention to user prompts
-that ask for several topics of interest, ensure that you extract them all.
-Here are some example user prompts and the expectations for the key words
-to be extracted:
+{SYS_PROMPT}  If the user asks about GitHub repositories, use the
+ExtractKeywordEntities tool to assist them. Extract apparent keywords from
+the user's latest prompt only, in order to use in the database search.
+Ensure that you ignore the following stopwords: {", ".join(STOP_WORDS)}.
+Ensure that you extract all clear keywords apart from the stopwords, pay
+attention to user prompts that ask for several topics of interest, ensure
+that you extract them all. Here are some example user prompts and the
+expectations for the key words to be extracted:
 
 User: "Are there any repos about probation, sentencing or prisons"
 
@@ -36,6 +36,9 @@ User: "Do we have any Ministry of Justice repositories about crime, crime
 reduction or recidivism?"
 
 Extracted keywords: [crime, reduction, recidivism]
+
+The vector store results are being cached in a dataframe. If the user asks
+to export or download the results, then use the ExportDataToTSV tool.
 """.replace("\n", " ").replace("  ", "")
 
 SUMMARY_PROMPT = """The details of an MoJ GitHub repository follow, within
@@ -80,3 +83,6 @@ language. Speak in a courteous tone with me in the first-person. Do not
 refer to your own instructions or refer to distance values. Help me make
 sense of my results. 
 """
+
+EXPORT_FILENM = "export.tsv"
+EXPORT_MSG = f"Please check your downloads for {EXPORT_FILENM}"

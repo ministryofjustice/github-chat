@@ -1,18 +1,21 @@
 import datetime as dt
+import io
 import json
 import logging
 from pathlib import Path
 
 import dotenv
 import openai
+import pandas as pd
 from pyprojroot import here
-from shiny import App, reactive, ui
+from shiny import App, reactive, render, ui
 
 from scripts.app_config import APP_LLM
 from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
+from scripts.constants import EXPORT_FILENM, EXPORT_MSG
 from scripts.icons import question_circle
-from scripts.custom_tools import ExtractKeywordEntities, toolbox
+from scripts.custom_tools import ExtractKeywordEntities, ExportDataToTSV, toolbox
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
     feedback_tab, more_info_tab, inputs_with_popovers
@@ -83,7 +86,7 @@ app_ui = ui.page_fillable(
                 ),
                 """
                 Re-initialises the chat stream to the system prompt and
-                welcome message.""",
+                welcome message. Wipes the stored repo results table.""",
                 placement="top",
                 id="clear_chat_popover",
 
@@ -96,7 +99,31 @@ app_ui = ui.page_fillable(
             ),
             ui.span(
             *inputs_with_popovers,
-            style="position: relative; bottom: 80px;",),
+            style="position: relative; bottom: 80px;",
+            ),
+            ui.popover(
+                ui.span(
+                    question_circle,
+                    style="position: relative; bottom: 68px; left: 185px; z-index: 1;",
+
+                ),
+                """
+                Exports the results of your repo searches to file. You can
+                also ask the model to do this for you by typing in the
+                chat.""",
+                placement="top",
+                id="download_button_popover",
+
+            ),
+            ui.download_button("download_df", "Download Table", class_="btn-primary", style="position: relative; bottom: 100px;",),
+            ui.tags.script(
+                    """
+                    Shiny.addCustomMessageHandler("clickButton", function(id) {
+                        document.getElementById(id)?.click();
+                    });
+                    """
+                ),
+
             bg="#f0e3ff"
             ), 
         ui.navset_tab(
@@ -131,8 +158,9 @@ def server(input, output, session):
         """Erase all user & assistant response content from chat stream"""
         # wipe to sys & welcome msg only
         _init_stream(_stream=stream)
+        wipe_export_table()
         await chat.clear_messages()
-        await chat.append_message(stream[-1]) 
+        await chat.append_message(stream[-1])
 
 
     @chat.on_user_submit
@@ -192,11 +220,11 @@ def server(input, output, session):
                 function_name = tool_call[0].function.name
                 arguments = tool_call[0].function.arguments
                 sanitised_func_nm = sanitise_string(function_name)
-                sanitised_args = [
-                    sanitise_string(arg) for arg in
-                    json.loads(arguments)["keywords"]
-                    ]
                 if sanitised_func_nm == "ExtractKeywordEntities":
+                    sanitised_args = [
+                        sanitise_string(arg) for arg in
+                        json.loads(arguments)["keywords"]
+                    ]
                     # Pydantic will raise if keywords violate schema rules
                     extracted_terms = ExtractKeywordEntities(
                         keywords=sanitised_args
@@ -234,13 +262,47 @@ def server(input, output, session):
                             "content": chroma_pipeline.chat_ui_results
                             })
                     stream.append(meta_resp)
- 
+
+                elif sanitised_func_nm == "ExportDataToTSV":
+                    should_export = json.loads(arguments)["export"]
+                    if should_export:
+                        dat = chroma_pipeline.export_table
+                        if len(dat) == 0:
+                            await chat.append_message(
+                                "No results found, please ask for repos first."
+                            )
+                        else:
+                            # pydantic will raise if doesn't conform to spec
+                            ExportDataToTSV(export=should_export)
+                            await session.send_custom_message(
+                                "clickButton", "download_df"
+                                )
+                            await chat.append_message(EXPORT_MSG)
+                    
 
     def reset_chat():
-        """Call this when session is flushed to wipe messages to scratch"""
+        """Call this when session flushes to wipe messages to scratch"""
         _init_stream(_stream=stream)
+    
+
+    def wipe_export_table():
+        """Call this when session ends to wipe results table"""
+        chroma_pipeline.export_table = pd.DataFrame()
+
+
+
+    @render.download(filename=EXPORT_FILENM)
+    def download_df():
+        """Output current export table to tsv"""
+        df = chroma_pipeline.export_table
+        with io.StringIO() as buf:
+            df.to_csv(buf, sep="\t", index=False)
+            yield buf.getvalue()
+        ui.notification_show(EXPORT_MSG)
 
 
     session.on_flush(reset_chat, once=False)
+    session.on_flushed(wipe_export_table, once=True)
+    session.on_ended(wipe_export_table)
 
 app = App(app_ui, server, static_assets=app_dir / "www")
