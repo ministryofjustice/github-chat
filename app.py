@@ -6,7 +6,6 @@ from pathlib import Path
 
 import dotenv
 import openai
-import pandas as pd
 from pyprojroot import here
 from shiny import App, reactive, render, ui
 
@@ -287,7 +286,7 @@ def server(input, output, session):
 
     def wipe_export_table():
         """Call this when session ends to wipe results table"""
-        chroma_pipeline.export_table = pd.DataFrame()
+        chroma_pipeline.reset_export_table()
 
 
 
