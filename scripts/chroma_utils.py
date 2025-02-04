@@ -22,7 +22,6 @@ from scripts.string_utils import (
 
 secrets = dotenv.dotenv_values(here(".env"))
 
-# results collection begins ===================================
 
 class ChromaDBPipeline:
     """
@@ -73,6 +72,8 @@ class ChromaDBPipeline:
     respond_with_db_results(sanitised_prompt: str) -> dict
         Generate a response with database results formatted for user
         interaction.
+    reset_export_table() -> None
+        Initialise thre export table, discarding any cached results.
     _login_nomic() -> None
         Log in to Nomic using the provided API key.
     """
@@ -149,7 +150,6 @@ class ChromaDBPipeline:
         -------
         None
         """
-
         self.collection_nm = max(self.client.list_collections()).name
         self.collection = self.client.get_collection(
             name=self.collection_nm
@@ -168,7 +168,6 @@ class ChromaDBPipeline:
         str
             The vintage extracted from the collection name.
         """
-        
         if not self.collection_nm:
             self.get_latest_chroma_collection()
         vintage = get_vintage_from_str(self.collection_nm)
@@ -195,11 +194,9 @@ class ChromaDBPipeline:
         results
             The results of the query from the collection.
         """
-        
         if not embedded_keywords:
             results = self.collection.query(
                 query_embeddings=self.embeddings.get("embeddings"),
-                # n_results=input.selected_n()
                 n_results=n_results,
                 )
         else:
@@ -260,9 +257,7 @@ class ChromaDBPipeline:
 
         # combine documents into a single dict will dedupe the results
         filtered_results = {}
-
         for i, ids in enumerate(self.results.get("ids")):
-
             for j, _id in enumerate(ids):
                 filtered_results[_id] = {
                     "document": self.results.get("documents")[i][j],
@@ -308,7 +303,6 @@ class ChromaDBPipeline:
             A dictionary containing the role and the formatted summary
             prompt.
         """
-
         nm_pat = re.compile(r"Name:\s*([^,]+)", re.IGNORECASE)
         url_pat = re.compile(r"url:\s*([^,]+)", re.IGNORECASE)
         desc_pat = re.compile(
@@ -365,8 +359,14 @@ class ChromaDBPipeline:
         summary_prompt = format_meta_prompt(
             usr_prompt=sanitised_prompt, res=repo_results
             )
+        return {
+            "role": "user",
+            "content": summary_prompt.replace("\n", " ").replace("  ", " ")
+            }
 
-        return {"role": "user", "content": summary_prompt.replace("\n", " ").replace("  ", " ")}
+    def reset_export_table(self):
+        """Initilialise the export table."""
+        self.export_table = pd.DataFrame()
 
     def _login_nomic(self) -> None:
         """
@@ -385,8 +385,13 @@ class ChromaDBPipeline:
         """
         login(token=self.nomic_api_key)
 
-
-    def execute_pipeline(self, keywords:List[str], n_results:int, distance_threshold:float, sanitised_prompt:str) -> str:
+    def execute_pipeline(
+        self,
+        keywords:List[str],
+        n_results:int,
+        distance_threshold:float,
+        sanitised_prompt:str
+        ) -> str:
         """
         Executes the pipeline methods in the correct order.
 
