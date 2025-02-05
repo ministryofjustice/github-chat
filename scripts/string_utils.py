@@ -2,7 +2,7 @@ import datetime as dt
 import re
 import warnings
 
-from scripts.constants import META_PROMPT, RESPONSE_TEMPLATE
+from scripts.constants import RESP_EVALUATION_PROMPT, RESPONSE_TEMPLATE
 
 
 def format_results(
@@ -22,10 +22,10 @@ def format_results(
         model_summary=db_result.get("model_summary"),
         )
 
-def format_meta_prompt(
+def format_evaluation_response(
     usr_prompt:str,
     res:str,
-    template:str=META_PROMPT
+    template:str=RESP_EVALUATION_PROMPT
     ) -> str:
     return template.format(results=res, user_prompt=usr_prompt)
 

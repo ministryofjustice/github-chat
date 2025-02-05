@@ -16,7 +16,7 @@ from scripts.app_config import EMBEDDINGS_MODEL
 from scripts.pipeline_config import VECTOR_STORE_PTH
 from scripts.string_utils import (
     format_results,
-    format_meta_prompt,
+    format_evaluation_response,
     get_vintage_from_str,
 )
 
@@ -356,7 +356,7 @@ class ChromaDBPipeline:
         self.export_table.reset_index(drop=True, inplace=True)
         repo_results = "***".join(ui_resps)
         self.chat_ui_results = repo_results
-        summary_prompt = format_meta_prompt(
+        summary_prompt = format_evaluation_response(
             usr_prompt=sanitised_prompt, res=repo_results
             )
         return {

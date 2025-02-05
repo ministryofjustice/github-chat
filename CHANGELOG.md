@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Backend changes to wiping export table.
+- Orchestrator agent and extraction agent coordinate entity extraction from
+user prompts. 
 
 ## [0.2.4] - 2025-01-30
 
