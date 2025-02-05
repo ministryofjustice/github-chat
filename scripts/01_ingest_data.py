@@ -9,7 +9,7 @@ import pandas as pd
 from pyprojroot import here
 from requests import HTTPError
 
-from scripts.constants import SUMMARY_PROMPT, SYS_PROMPT
+from scripts.constants import REPO_SUMMARY_PROMPT, REPO_SUMMARY_SYS_PROMPT
 from scripts.pipeline_config import REPO_LLM
 from scripts.string_utils import sanitise_string
 
@@ -67,7 +67,7 @@ def ingest():
     openai_client = openai.OpenAI(api_key=openai_key)
     system_prompt = {
         "role": "system",
-        "content": SYS_PROMPT.replace("\n", " ").replace("  ", "")
+        "content": REPO_SUMMARY_SYS_PROMPT.replace("\n", " ").replace("  ", "")
     }
     stream = [system_prompt]
 
@@ -86,7 +86,7 @@ def ingest():
                 """
                 repo_content = {
                 "role": "user",
-                "content": sanitise_string(SUMMARY_PROMPT.format(repo_deets=repo_deets))
+                "content": sanitise_string(REPO_SUMMARY_PROMPT.format(repo_deets=repo_deets))
                 }
                 stream.append(repo_content)
                 model_resp = openai_client.chat.completions.create(
