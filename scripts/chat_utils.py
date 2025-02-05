@@ -1,12 +1,11 @@
 """Utilities for handling chat stream"""
 
-from scripts.constants import APP_SYS_PROMPT, WELCOME_MSG
-
-system_prompt = {"role": "system", "content": APP_SYS_PROMPT}
-welcome = {"role": "assistant", "content": WELCOME_MSG}
+from scripts.constants import ORCHESTRATOR_SYS_PROMPT, WELCOME_MSG
 
 
-def _init_stream(_stream:list, sys:str=system_prompt, wlcm:str=welcome):
+def _init_stream(
+    _stream:list, sys:str=ORCHESTRATOR_SYS_PROMPT, wlcm:str=WELCOME_MSG
+    ) -> None:
     """Internal utility for initialising the chat stream.
     
     Can be used at app startup, when the user flushes the chat on action
@@ -14,5 +13,6 @@ def _init_stream(_stream:list, sys:str=system_prompt, wlcm:str=welcome):
     """
     _stream
     _stream.clear()
-    _stream.append(sys)
-    _stream.append(wlcm)
+    _stream.append({"role": "system", "content": sys})
+    if wlcm:
+        _stream.append({"role": "assistant", "content": wlcm})
