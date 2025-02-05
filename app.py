@@ -12,9 +12,18 @@ from shiny import App, reactive, render, ui
 from scripts.app_config import APP_LLM
 from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
-from scripts.constants import EXPORT_FILENM, EXPORT_MSG
+from scripts.constants import (
+    EXTRACTION_SYS_PROMPT,
+    EXPORT_FILENM,
+    EXPORT_MSG
+    )
 from scripts.icons import question_circle
-from scripts.custom_tools import ExtractKeywordEntities, ExportDataToTSV, toolbox
+from scripts.custom_tools import (
+    ExtractKeywordEntities,
+    ExportDataToTSV,
+    ShouldExtractKeywords,
+    toolbox,
+    )
 from scripts.moderations import check_moderation
 from scripts.custom_components import (
     feedback_tab, more_info_tab, inputs_with_popovers
@@ -28,7 +37,8 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler(here("logs/app.log"))],
     )
-stream = []
+stream = [] # Orchestrator stream                  
+extraction_stream = [] # Keyword extraction stream
 _init_stream(_stream=stream)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
@@ -201,7 +211,6 @@ def server(input, output, session):
                 **completions_params
             )
             # implement conditional flow dependent upon whether a tool call
-            # is asked for
             resp = response.choices[0]
             if (refusal := resp.message.refusal):
                 sanitised_refusal = sanitise_string(refusal)
@@ -209,24 +218,55 @@ def server(input, output, session):
                 stream.append(
                     {"role": "assistant", "content": sanitised_refusal}
                     )
+
             elif (msg := resp.message.content):
                 sanitised_msg = sanitise_string(msg)
                 await chat.append_message(sanitised_msg)
                 stream.append(
                     {"role": "assistant", "content": sanitised_msg}
                     )
+
             elif (tool_call := resp.message.tool_calls):
                 function_name = tool_call[0].function.name
                 arguments = tool_call[0].function.arguments
                 sanitised_func_nm = sanitise_string(function_name)
-                if sanitised_func_nm == "ExtractKeywordEntities":
-                    sanitised_args = [
-                        sanitise_string(arg) for arg in
-                        json.loads(arguments)["keywords"]
+
+                if sanitised_func_nm == "ShouldExtractKeywords":
+                    # pydantic defence
+                    extract_this = ShouldExtractKeywords(
+                        use_tool=json.loads(arguments)["use_tool"],
+                        )
+                    # start a new extraction stream
+                    _init_stream(
+                        _stream=extraction_stream,
+                        sys=EXTRACTION_SYS_PROMPT,
+                        wlcm=None
+                        )
+                    extraction_stream.append(
+                        {"role": "user", "content": sanitised_prompt}
+                        )
+                    extraction_params = {
+                        "model": APP_LLM,
+                        "messages": extraction_stream,
+                        "stream": False,
+                        "tools": [
+                            openai.pydantic_function_tool(
+                                ExtractKeywordEntities
+                                ),
+                            ],
+                        "temperature": 0.0,
+                    }
+                    extraction_resp = openai_client.chat.completions.create(
+                        **extraction_params
+                    )
+                    kwds = extraction_resp.choices[0].message.tool_calls[0].function.arguments
+                    sanitised_kwds = [
+                        sanitise_string(kwd) for kwd in
+                        json.loads(kwds)["keywords"]
                     ]
                     # Pydantic will raise if keywords violate schema rules
                     extracted_terms = ExtractKeywordEntities(
-                        keywords=sanitised_args
+                        keywords=sanitised_kwds
                         )
                     ui.notification_show(
                         ("Searching database for keywords:"
@@ -257,7 +297,7 @@ def server(input, output, session):
                     await chat.append_message(response)
                     await chat.append_message(
                         {
-                            "role": "asisstant",
+                            "role": "assistant",
                             "content": chroma_pipeline.chat_ui_results
                             })
                     stream.append(meta_resp)
@@ -271,7 +311,7 @@ def server(input, output, session):
                                 "No results found, please ask for repos first."
                             )
                         else:
-                            # pydantic will raise if doesn't conform to spec
+                            # pydantic raises if doesn't conform to spec
                             ExportDataToTSV(export=should_export)
                             await session.send_custom_message(
                                 "clickButton", "download_df"
@@ -287,7 +327,6 @@ def server(input, output, session):
     def wipe_export_table():
         """Call this when session ends to wipe results table"""
         chroma_pipeline.reset_export_table()
-
 
 
     @render.download(filename=EXPORT_FILENM)
