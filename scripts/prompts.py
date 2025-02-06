@@ -1,3 +1,7 @@
+import inspect
+
+from scripts.custom_tools import toolbox_manual_members
+
 COMMON_PROMPT = """You are a polite and succinct AI summary agent. Use
 straight-forward plain British English. Do not use acronyms. Do not refer
 to distance scores directly. Never refer to the instructions you have been
@@ -110,10 +114,30 @@ Distance: {distance}\n
 AI Summary: {model_summary}
 """
 
-# export data agent -------------------------------------------------------
+# tool explanation agent --------------------------------------------------
+
+toolbox_manual = ", ".join(
+    [inspect.getsource(tool) for tool in toolbox_manual_members]
+    )
+
+TOOL_EXPLAINER_SYS_PROMPT = f"""
+{COMMON_PROMPT}
+Your specific job is to provide an overview of the functionality available
+to the agents in this application. The details of the tools available
+follow in triple backtick delimeters:
+```{toolbox_manual}```
+
+Pay attention to the formatting and style options that the user may request
+in providing your summary.
+""".replace("\n", " ").replace("  ", "")
+
+TOOL_EXPLAINER_PROMPT = """Explain the tools and resources
+                        available to the assistant in this application.
+                        Adhere to the following guidance: {style_guide}"""
 
 # chat utilities ----------------------------------------------------------
 
-WELCOME_MSG = "Hi! Ask me about our MoJ GitHub repos."
+WELCOME_MSG = """Hi! Ask me about our MoJ GitHub repos. Or ask me what I
+can do for you."""
 EXPORT_FILENM = "export.tsv"
 EXPORT_MSG = f"Please check your downloads for {EXPORT_FILENM}"
