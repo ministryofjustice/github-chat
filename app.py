@@ -16,8 +16,10 @@ from scripts.custom_components import (
     feedback_tab, more_info_tab, inputs_with_popovers
 )
 from scripts.custom_tools import (
-    ExtractKeywordEntities,
+    ExplainTools,
     ExportDataToTSV,
+    ExtractKeywordEntities,
+    ShouldExplainTools,
     ShouldExtractKeywords,
     toolbox,
     )
@@ -26,7 +28,9 @@ from scripts.moderations import check_moderation
 from scripts.prompts import (
     EXTRACTION_SYS_PROMPT,
     EXPORT_FILENM,
-    EXPORT_MSG
+    EXPORT_MSG,
+    TOOL_EXPLAINER_PROMPT,
+    TOOL_EXPLAINER_SYS_PROMPT,
     )
 from scripts.string_utils import sanitise_string
 
@@ -39,6 +43,7 @@ logging.basicConfig(
     )
 stream = [] # Orchestrator stream                  
 extraction_stream = [] # Keyword extraction stream
+tool_explainer_stream = []
 _init_stream(_stream=stream)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
@@ -317,7 +322,50 @@ def server(input, output, session):
                                 "clickButton", "download_df"
                                 )
                             await chat.append_message(EXPORT_MSG)
-                    
+
+                elif sanitised_func_nm == "ShouldExplainTools":
+                    args = json.loads(arguments)
+                    style_guide = args["style_guidance"]
+                    ui.notification_show(
+                        f"Asking for tool explanation with style guidance: {style_guide}"
+                        )
+                    # pydantic defence
+                    should_explain_tools = ShouldExplainTools(
+                        use_tool=args["use_tool"],
+                        style_guidance=style_guide,
+                        )
+                    _init_stream(
+                        _stream=tool_explainer_stream,
+                        sys=TOOL_EXPLAINER_SYS_PROMPT,
+                        wlcm=None
+                        )
+                    explain_prompt = {
+                        "role": "user",
+                        "content": TOOL_EXPLAINER_PROMPT.format(
+                            style_guide=style_guide
+                            ),
+                        }
+                    tool_explainer_stream.append(explain_prompt)
+                    tool_explainer_params = {
+                        "model": APP_LLM,
+                        "messages": tool_explainer_stream,
+                        "stream": False,
+                        "max_completion_tokens": input.max_tokens(),
+                        "presence_penalty": input.pres_pen(),
+                        "frequency_penalty": input.freq_pen(),
+                        "temperature": input.temp(),
+                    }
+                    tool_explanation_resp = openai_client.chat.completions.create(
+                        **tool_explainer_params
+                    )
+                    tool_explanation = tool_explanation_resp.choices[0].message.content
+                    toolbox_manual = {
+                        "role": "assistant",
+                        "content": tool_explanation,
+                        }
+                    await chat.append_message(toolbox_manual)
+                    stream.append(toolbox_manual)
+
 
     def reset_chat():
         """Call this when session flushes to wipe messages to scratch"""
