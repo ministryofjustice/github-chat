@@ -12,22 +12,22 @@ from shiny import App, reactive, render, ui
 from scripts.app_config import APP_LLM
 from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
-from scripts.constants import (
-    EXTRACTION_SYS_PROMPT,
-    EXPORT_FILENM,
-    EXPORT_MSG
-    )
-from scripts.icons import question_circle
+from scripts.custom_components import (
+    feedback_tab, more_info_tab, inputs_with_popovers
+)
 from scripts.custom_tools import (
     ExtractKeywordEntities,
     ExportDataToTSV,
     ShouldExtractKeywords,
     toolbox,
     )
+from scripts.icons import question_circle
 from scripts.moderations import check_moderation
-from scripts.custom_components import (
-    feedback_tab, more_info_tab, inputs_with_popovers
-)
+from scripts.prompts import (
+    EXTRACTION_SYS_PROMPT,
+    EXPORT_FILENM,
+    EXPORT_MSG
+    )
 from scripts.string_utils import sanitise_string
 
 # Before ==================================================================

@@ -2,7 +2,7 @@ import datetime as dt
 import re
 import warnings
 
-from scripts.constants import RESP_EVALUATION_PROMPT, RESPONSE_TEMPLATE
+from scripts.prompts import RESP_EVALUATION_PROMPT, RESPONSE_TEMPLATE
 
 
 def format_results(

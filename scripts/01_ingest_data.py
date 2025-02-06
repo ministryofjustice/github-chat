@@ -9,8 +9,8 @@ import pandas as pd
 from pyprojroot import here
 from requests import HTTPError
 
-from scripts.constants import REPO_SUMMARY_PROMPT, REPO_SUMMARY_SYS_PROMPT
 from scripts.pipeline_config import REPO_LLM
+from scripts.prompts import REPO_SUMMARY_PROMPT, REPO_SUMMARY_SYS_PROMPT
 from scripts.string_utils import sanitise_string
 
 def ingest():
