@@ -1,6 +1,6 @@
 """Utilities for handling chat stream"""
 
-from scripts.constants import ORCHESTRATOR_SYS_PROMPT, WELCOME_MSG
+from scripts.prompts import ORCHESTRATOR_SYS_PROMPT, WELCOME_MSG
 
 
 def _init_stream(

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ask the assistant to explain what it can do for you.
+- Provide style guidance for explaining the assisstant's functionality, eg
+as a table or as a list. 
+
 ### Changed
 
 - Backend changes to wiping export table.

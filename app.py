@@ -12,22 +12,27 @@ from shiny import App, reactive, render, ui
 from scripts.app_config import APP_LLM
 from scripts.chat_utils import _init_stream
 from scripts.chroma_utils import ChromaDBPipeline
-from scripts.constants import (
-    EXTRACTION_SYS_PROMPT,
-    EXPORT_FILENM,
-    EXPORT_MSG
-    )
-from scripts.icons import question_circle
-from scripts.custom_tools import (
-    ExtractKeywordEntities,
-    ExportDataToTSV,
-    ShouldExtractKeywords,
-    toolbox,
-    )
-from scripts.moderations import check_moderation
 from scripts.custom_components import (
     feedback_tab, more_info_tab, inputs_with_popovers
 )
+from scripts.custom_tools import (
+    ExplainTools,
+    ExportDataToTSV,
+    ExtractKeywordEntities,
+    ShouldExplainTools,
+    ShouldExtractKeywords,
+    toolbox,
+    )
+from scripts.icons import question_circle
+from scripts.moderations import check_moderation
+from scripts.prompts import (
+    EXTRACTION_SYS_PROMPT,
+    EXPORT_FILENM,
+    EXPORT_MSG,
+    TOOL_EXPLAINER_PROMPT,
+    TOOL_EXPLAINER_SYS_PROMPT,
+    TOOLS_MISUSE_DEFENCE,
+    )
 from scripts.string_utils import sanitise_string
 
 # Before ==================================================================
@@ -39,6 +44,7 @@ logging.basicConfig(
     )
 stream = [] # Orchestrator stream                  
 extraction_stream = [] # Keyword extraction stream
+tool_explainer_stream = []
 _init_stream(_stream=stream)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
@@ -259,48 +265,56 @@ def server(input, output, session):
                     extraction_resp = openai_client.chat.completions.create(
                         **extraction_params
                     )
-                    kwds = extraction_resp.choices[0].message.tool_calls[0].function.arguments
-                    sanitised_kwds = [
-                        sanitise_string(kwd) for kwd in
-                        json.loads(kwds)["keywords"]
-                    ]
-                    # Pydantic will raise if keywords violate schema rules
-                    extracted_terms = ExtractKeywordEntities(
-                        keywords=sanitised_kwds
-                        )
-                    ui.notification_show(
-                        ("Searching database for keywords:"
-                        f" {', '.join(extracted_terms.keywords)}")
-                        )
-                    summarise_this = chroma_pipeline.execute_pipeline(
-                        keywords=extracted_terms.keywords,
-                        n_results=input.selected_n(),
-                        distance_threshold=input.dist_thresh(),
-                        sanitised_prompt=sanitised_prompt
-                    )
-                    if (n_removed := chroma_pipeline.total_removed) > 0:
-                        ui.notification_show(
-                            f"{n_removed} results were removed."
+
+                    if (msg := extraction_resp.choices[0].message.content):
+                        sanitised_msg = sanitise_string(msg)
+                        await chat.append_message(sanitised_msg)
+                        stream.append(
+                            {"role": "assistant", "content": sanitised_msg}
                             )
-                    if len(chroma_pipeline.results) == 0:
-                        ui.notification_show(
-                            "No results shown, increase distance threshold"
+                    else:
+                        kwds = extraction_resp.choices[0].message.tool_calls[0].function.arguments
+                        sanitised_kwds = [
+                            sanitise_string(kwd) for kwd in
+                            json.loads(kwds)["keywords"]
+                        ]
+                        # Pydantic will raise if keywords violate schema rules
+                        extracted_terms = ExtractKeywordEntities(
+                            keywords=sanitised_kwds
                             )
-                    stream.append(summarise_this)
-                    response = openai_client.chat.completions.create(
-                        **completions_params
+                        ui.notification_show(
+                            ("Searching database for keywords:"
+                            f" {', '.join(extracted_terms.keywords)}")
+                            )
+                        summarise_this = chroma_pipeline.execute_pipeline(
+                            keywords=extracted_terms.keywords,
+                            n_results=input.selected_n(),
+                            distance_threshold=input.dist_thresh(),
+                            sanitised_prompt=sanitised_prompt
                         )
-                    meta_resp = {
-                        "role": "assistant",
-                        "content": response.choices[0].message.content
-                        }
-                    await chat.append_message(response)
-                    await chat.append_message(
-                        {
+                        if (n_removed := chroma_pipeline.total_removed) > 0:
+                            ui.notification_show(
+                                f"{n_removed} results were removed."
+                                )
+                        if len(chroma_pipeline.results) == 0:
+                            ui.notification_show(
+                                "No results shown, increase distance threshold"
+                                )
+                        stream.append(summarise_this)
+                        response = openai_client.chat.completions.create(
+                            **completions_params
+                            )
+                        meta_resp = {
                             "role": "assistant",
-                            "content": chroma_pipeline.chat_ui_results
-                            })
-                    stream.append(meta_resp)
+                            "content": response.choices[0].message.content
+                            }
+                        await chat.append_message(response)
+                        await chat.append_message(
+                            {
+                                "role": "assistant",
+                                "content": chroma_pipeline.chat_ui_results
+                                })
+                        stream.append(meta_resp)
 
                 elif sanitised_func_nm == "ExportDataToTSV":
                     should_export = json.loads(arguments)["export"]
@@ -317,7 +331,51 @@ def server(input, output, session):
                                 "clickButton", "download_df"
                                 )
                             await chat.append_message(EXPORT_MSG)
-                    
+
+                elif sanitised_func_nm == "ShouldExplainTools":
+                    args = json.loads(arguments)
+                    style_guide = args["style_guidance"]
+                    ui.notification_show(
+                        f"Asking for tool explanation with style guidance: {style_guide}"
+                        )
+                    # pydantic defence
+                    should_explain_tools = ShouldExplainTools(
+                        use_tool=args["use_tool"],
+                        style_guidance=style_guide,
+                        )
+                    _init_stream(
+                        _stream=tool_explainer_stream,
+                        sys=TOOL_EXPLAINER_SYS_PROMPT,
+                        wlcm=None
+                        )
+                    explain_prompt = {
+                        "role": "user",
+                        "content": TOOL_EXPLAINER_PROMPT.format(
+                            style_guide=style_guide,
+                            TOOLS_MISUSE_DEFENCE=TOOLS_MISUSE_DEFENCE,
+                            ),
+                        }
+                    tool_explainer_stream.append(explain_prompt)
+                    tool_explainer_params = {
+                        "model": APP_LLM,
+                        "messages": tool_explainer_stream,
+                        "stream": False,
+                        "max_completion_tokens": input.max_tokens(),
+                        "presence_penalty": input.pres_pen(),
+                        "frequency_penalty": input.freq_pen(),
+                        "temperature": input.temp(),
+                    }
+                    tool_explanation_resp = openai_client.chat.completions.create(
+                        **tool_explainer_params
+                    )
+                    tool_explanation = tool_explanation_resp.choices[0].message.content
+                    toolbox_manual = {
+                        "role": "assistant",
+                        "content": tool_explanation,
+                        }
+                    await chat.append_message(toolbox_manual)
+                    stream.append(toolbox_manual)
+
 
     def reset_chat():
         """Call this when session flushes to wipe messages to scratch"""

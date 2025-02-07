@@ -19,9 +19,11 @@ class ShouldExtractKeywords(BaseModel):
 
 class ExtractKeywordEntities(BaseModel):
     """
-    A model for extracting keyword entities.
+    A tool for extracting keyword entities from user prompts.
 
-    Pass a list of keyword strings extracted from the user's prompt.
+    Pass a list of keyword strings extracted from the user's prompt. These
+    keywords will be used to query a vector store of documents with
+    information about Ministry of Justice GitHub repositories.
 
     Attributes
     ----------
@@ -33,7 +35,7 @@ class ExtractKeywordEntities(BaseModel):
 
 
 class ExportDataToTSV(BaseModel):
-    """Export cached data to a TSV file.
+    """Export cached repo results data to a TSV file.
 
     Attributes
     ----------
@@ -43,7 +45,45 @@ class ExportDataToTSV(BaseModel):
 
     export: bool
 
+
+class ShouldExplainTools(BaseModel):
+    """Indicate that the User requires an overview of available tools.
+
+    Attributes
+    ----------
+    use_tool: bool
+        Should the ExplainTools tool be used.
+
+    style_guidance: str
+        If the user has provided guidance on formatting the tool overview,
+        include this here.
+    """
+    use_tool: bool
+    style_guidance: str
+
+
+class ExplainTools(BaseModel):
+    """Provide the User with an overview of your tools.
+
+    Ensure that any style guidance requested by the user is adhered to. 
+
+    Attributes
+    ----------
+    toolbox_manual: str
+        The formatted guide to all of the available tools.
+
+    """
+    toolbox_manual: str
+
+
 toolbox = [
     pydantic_function_tool(ShouldExtractKeywords),
+    pydantic_function_tool(ShouldExplainTools),
     pydantic_function_tool(ExportDataToTSV),
-]
+] # these tools are available to the orchestrator agent
+
+toolbox_manual_members = [
+    ExtractKeywordEntities,
+    ExportDataToTSV,
+    ExplainTools,
+] # these tools will be included in any tool explanations required
