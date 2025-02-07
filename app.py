@@ -31,6 +31,7 @@ from scripts.prompts import (
     EXPORT_MSG,
     TOOL_EXPLAINER_PROMPT,
     TOOL_EXPLAINER_SYS_PROMPT,
+    TOOLS_MISUSE_DEFENCE,
     )
 from scripts.string_utils import sanitise_string
 
@@ -264,48 +265,56 @@ def server(input, output, session):
                     extraction_resp = openai_client.chat.completions.create(
                         **extraction_params
                     )
-                    kwds = extraction_resp.choices[0].message.tool_calls[0].function.arguments
-                    sanitised_kwds = [
-                        sanitise_string(kwd) for kwd in
-                        json.loads(kwds)["keywords"]
-                    ]
-                    # Pydantic will raise if keywords violate schema rules
-                    extracted_terms = ExtractKeywordEntities(
-                        keywords=sanitised_kwds
-                        )
-                    ui.notification_show(
-                        ("Searching database for keywords:"
-                        f" {', '.join(extracted_terms.keywords)}")
-                        )
-                    summarise_this = chroma_pipeline.execute_pipeline(
-                        keywords=extracted_terms.keywords,
-                        n_results=input.selected_n(),
-                        distance_threshold=input.dist_thresh(),
-                        sanitised_prompt=sanitised_prompt
-                    )
-                    if (n_removed := chroma_pipeline.total_removed) > 0:
-                        ui.notification_show(
-                            f"{n_removed} results were removed."
+
+                    if (msg := extraction_resp.choices[0].message.content):
+                        sanitised_msg = sanitise_string(msg)
+                        await chat.append_message(sanitised_msg)
+                        stream.append(
+                            {"role": "assistant", "content": sanitised_msg}
                             )
-                    if len(chroma_pipeline.results) == 0:
-                        ui.notification_show(
-                            "No results shown, increase distance threshold"
+                    else:
+                        kwds = extraction_resp.choices[0].message.tool_calls[0].function.arguments
+                        sanitised_kwds = [
+                            sanitise_string(kwd) for kwd in
+                            json.loads(kwds)["keywords"]
+                        ]
+                        # Pydantic will raise if keywords violate schema rules
+                        extracted_terms = ExtractKeywordEntities(
+                            keywords=sanitised_kwds
                             )
-                    stream.append(summarise_this)
-                    response = openai_client.chat.completions.create(
-                        **completions_params
+                        ui.notification_show(
+                            ("Searching database for keywords:"
+                            f" {', '.join(extracted_terms.keywords)}")
+                            )
+                        summarise_this = chroma_pipeline.execute_pipeline(
+                            keywords=extracted_terms.keywords,
+                            n_results=input.selected_n(),
+                            distance_threshold=input.dist_thresh(),
+                            sanitised_prompt=sanitised_prompt
                         )
-                    meta_resp = {
-                        "role": "assistant",
-                        "content": response.choices[0].message.content
-                        }
-                    await chat.append_message(response)
-                    await chat.append_message(
-                        {
+                        if (n_removed := chroma_pipeline.total_removed) > 0:
+                            ui.notification_show(
+                                f"{n_removed} results were removed."
+                                )
+                        if len(chroma_pipeline.results) == 0:
+                            ui.notification_show(
+                                "No results shown, increase distance threshold"
+                                )
+                        stream.append(summarise_this)
+                        response = openai_client.chat.completions.create(
+                            **completions_params
+                            )
+                        meta_resp = {
                             "role": "assistant",
-                            "content": chroma_pipeline.chat_ui_results
-                            })
-                    stream.append(meta_resp)
+                            "content": response.choices[0].message.content
+                            }
+                        await chat.append_message(response)
+                        await chat.append_message(
+                            {
+                                "role": "assistant",
+                                "content": chroma_pipeline.chat_ui_results
+                                })
+                        stream.append(meta_resp)
 
                 elif sanitised_func_nm == "ExportDataToTSV":
                     should_export = json.loads(arguments)["export"]
@@ -342,7 +351,8 @@ def server(input, output, session):
                     explain_prompt = {
                         "role": "user",
                         "content": TOOL_EXPLAINER_PROMPT.format(
-                            style_guide=style_guide
+                            style_guide=style_guide,
+                            TOOLS_MISUSE_DEFENCE=TOOLS_MISUSE_DEFENCE,
                             ),
                         }
                     tool_explainer_stream.append(explain_prompt)
