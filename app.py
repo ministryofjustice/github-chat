@@ -57,7 +57,7 @@ vintage = chroma_pipeline.data_vintage
 app_ui = ui.page_fillable(
     ui.head_content(
         ui.tags.link(
-            rel="icon", type="image/svg", href="favicon.svg"
+            rel="icon", type="image/ico", href="favicon.ico"
         ),
         ui.include_css(app_dir / "www/styles.css"),
     ),
