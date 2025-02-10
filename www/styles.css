@@ -142,7 +142,6 @@ label {
   }
   
   shiny-user-message {
-    color: #f0e3ff;
     background-color: var(--aij-4) !important;
     padding: 0.75rem 1rem;
     border-radius: 10px;
@@ -150,8 +149,13 @@ label {
 
   }
 
+  shiny-user-message p {
+    color: #f0e3ff;
+  }
+
 textarea#chat_user_input {
     border: 0.5px solid var(--aij-2);
+    color: var(--aij-4);
   }
 
 textarea#chat_user_input:focus-visible {
@@ -162,11 +166,6 @@ textarea#chat_user_input:focus-visible {
 textarea#chat_user_input::placeholder {
     color: var(--aij-2) !important;
   }
-
-textarea#chat_user_input {
-    color: var(--aij-4) !important;
-
-}
 
 button:disabled {
     color: var(--aij-1) !important;
