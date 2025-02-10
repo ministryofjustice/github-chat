@@ -1,13 +1,22 @@
+:root {
+    --aij-1: #D198FA;
+    --aij-2: #ff66C4;
+    --aij-3: #B127B0;
+    --aij-4: #4C146B;
+}
+
+
+
 h1, h2, h3, h4, h5, h6, span {
-    color: #3d1265;
+    color: var(--aij-4);
 }
 
 a {
-    color: #ff007c;
+    color: var(--aij-3);
 }
 
 hr {
-    border: 2px solid #3d1265;
+    border: 2px solid var(--aij-4);
 }
 
 body {
@@ -15,16 +24,16 @@ body {
 }
 
 input[type="number"] {
-    border-color: #ff007c;
+    border-color: var(--aij-3);
 }
 
 .collapse-icon {
-    color: #ff007c;
+    color: var(--aij-3);
 }
 
 .nav-link.active {
     color: white !important;
-    background-color: #ff007c !important;
+    background-color: var(--aij-3) !important;
 }
 
 .nav.nav-tabs {
@@ -36,16 +45,16 @@ input[type="number"] {
 }
 
 .nav-link {
-    color: #ff007c !important;
+    color: var(--aij-3) !important;
 }
 
 textarea.form-control.textarea-autoresize {
-    outline: 1px solid #ff007c;
+    outline: 1px solid var(--aij-3);
 }
 
 .well {
     background-color: #f0e3ff;
-    color: #3d1265;
+    color: var(--aij-4);
 }
 
 #header {
@@ -55,23 +64,23 @@ textarea.form-control.textarea-autoresize {
 }
 
 label {
-    color: #3d1265;
+    color: var(--aij-4);
 }
 
 .sidebar-content {
-    color: #3d1265;
+    color: var(--aij-4);
 }
 
 .btn {
     background-color: white;
-    color: #3d1265;
-    border: 1px solid #ff007c;
+    color: var(--aij-4);
+    border: 1px solid var(--aij-3);
     transition: background-color 0.5s ease;
 }
 
 .btn:hover {
-    background-color: #ff007c;
-    border-color: #ff007c;
+    background-color: var(--aij-3);
+    border-color: var(--aij-3);
     color: white;
 }
 
@@ -79,18 +88,18 @@ label {
 .bi-question-circle {
     width: 16px;
     height: 16px;
-    fill: #ff007c;
+    fill: var(--aij-3);
     transition: fill 0.3s ease, transform 0.3s ease;
 }
 
 .bi-question-circle:hover {
-    fill: #3d1265;
+    fill: var(--aij-4);
     transform: scale(1.3);
 }
 
 .popover-body {
-    background-color: #f1f2f5;
-    color: #3d1265;
+    background-color: white;
+    color: var(--aij-4);
     padding: 1rem;
     border-radius: 0.5rem;
     position: relative;
