@@ -14,7 +14,7 @@ h1, h2, h3, h4, h5, h6, span {
 }
 
 a {
-    color: var(--aij-3);
+    color: var(--aij-2);
 }
 
 hr {
@@ -26,7 +26,7 @@ body {
 }
 
 input[type="number"] {
-    border-color: var(--aij-3);
+    border-color: var(--aij-1);
 }
 
 .collapse-icon {
@@ -35,7 +35,7 @@ input[type="number"] {
 
 .nav-link.active {
     color: white !important;
-    background-color: var(--aij-3) !important;
+    background-color: var(--aij-4) !important;
 }
 
 .nav.nav-tabs {
@@ -50,18 +50,15 @@ input[type="number"] {
     color: var(--aij-3) !important;
 }
 
-textarea.form-control.textarea-autoresize {
-    outline: 1px solid var(--aij-3);
-}
-
 .well {
     background-color: #f0e3ff;
     color: var(--aij-4);
+    outline: 0.5px solid var(--aij-1);
 }
 
 #header {
     background-color: #f0e3ff;
-    outline: 1px solid #ddd3ee;
+    outline: 0.5px solid var(--aij-1);
 
 }
 
@@ -76,13 +73,13 @@ label {
 .btn {
     background-color: white;
     color: var(--aij-4);
-    border: 1px solid var(--aij-3);
+    border: 1px solid var(--aij-1);
     transition: background-color 0.5s ease;
 }
 
 .btn:hover {
-    background-color: var(--aij-3);
-    border-color: var(--aij-3);
+    background-color: var(--aij-2);
+    border-color: var(--aij-2);
     color: white;
 }
 
@@ -111,3 +108,51 @@ label {
     display: none !important;
 }
 /* ------------------- popover styles -----------------------------------*/
+
+/* ------------------- Chat components ----------------------------------*/
+
+  shiny-chat-message .message-content {
+    color: var(--aij-4);
+    background-color: #f0e3ff !important;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    display: inline-block;
+
+  }
+  
+  shiny-user-message {
+    color: #f0e3ff;
+    background-color: var(--aij-4) !important;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    display: inline-block;
+
+  }
+
+textarea#chat_user_input {
+    /* outline: 0.5px solid var(--aij-1); */
+    border: 0.5px solid var(--aij-1);
+  }
+
+textarea#chat_user_input:focus-visible {
+    box-shadow: none;
+    border: 1.4px solid var(--aij-3) !important;
+  }
+
+textarea#chat_user_input::placeholder {
+    color: var(--aij-1) !important;
+  }
+
+textarea#chat_user_input {
+    color: var(--aij-4) !important;
+
+}
+
+button:disabled {
+    color: var(--aij-1) !important;
+  }
+
+button {
+    color: var(--aij-4) !important;
+}
+/* ------------------- Chat components ----------------------------------*/
