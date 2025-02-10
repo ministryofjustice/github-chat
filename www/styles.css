@@ -5,7 +5,9 @@
     --aij-4: #4C146B;
 }
 
-
+.hidden {
+    display: none;
+}
 
 h1, h2, h3, h4, h5, h6, span {
     color: var(--aij-4);
@@ -20,7 +22,7 @@ hr {
 }
 
 body {
-    background-color: #f1f2f5;
+    background-color: white;
 }
 
 input[type="number"] {
@@ -88,7 +90,7 @@ label {
 .bi-question-circle {
     width: 16px;
     height: 16px;
-    fill: var(--aij-3);
+    fill: var(--aij-2);
     transition: fill 0.3s ease, transform 0.3s ease;
 }
 

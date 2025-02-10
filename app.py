@@ -62,7 +62,7 @@ app_ui = ui.page_fillable(
         ui.include_css(app_dir / "www/styles.css"),
     ),
     ui.tags.head(ui.HTML("<html lang='en'>")),
-    ui.panel_title("MoJ GitHub Chat"),
+    ui.div(ui.panel_title("MoJ GitHub Chat"), class_="hidden"),
     ui.div(
         ui.img(
             src="justice-ai-logo.png",
