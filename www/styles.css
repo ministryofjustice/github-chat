@@ -9,6 +9,14 @@
     display: none;
 }
 
+p {
+    color: var(--aij-4);
+}
+
+ul {
+    color: var(--aij-4);
+}
+
 h1, h2, h3, h4, h5, h6, span {
     color: var(--aij-4);
 }
@@ -30,7 +38,7 @@ input[type="number"] {
 }
 
 .collapse-icon {
-    color: var(--aij-3);
+    color: var(--aij-2);
 }
 
 .nav-link.active {
@@ -49,6 +57,14 @@ input[type="number"] {
 .nav-link {
     color: var(--aij-3) !important;
 }
+
+.nav-link:hover {
+    border: 0.5px solid var(--aij-2) !important;
+  }
+
+ul.nav.nav-tabs {
+    border-bottom: 0.5px solid var(--aij-1);
+  }
 
 .well {
     background-color: #f0e3ff;
@@ -70,17 +86,18 @@ label {
     color: var(--aij-4);
 }
 
+
 .btn {
     background-color: white;
-    color: var(--aij-4);
+    color: var(--aij-4) !important;
     border: 1px solid var(--aij-1);
     transition: background-color 0.5s ease;
 }
 
 .btn:hover {
-    background-color: var(--aij-2);
-    border-color: var(--aij-2);
-    color: white;
+    background-color: var(--aij-4);
+    border-color: var(--aij-4);
+    color: white !important;
 }
 
 /* ------------------- popover styles -----------------------------------*/
@@ -130,8 +147,7 @@ label {
   }
 
 textarea#chat_user_input {
-    /* outline: 0.5px solid var(--aij-1); */
-    border: 0.5px solid var(--aij-1);
+    border: 0.5px solid var(--aij-2);
   }
 
 textarea#chat_user_input:focus-visible {
@@ -140,7 +156,7 @@ textarea#chat_user_input:focus-visible {
   }
 
 textarea#chat_user_input::placeholder {
-    color: var(--aij-1) !important;
+    color: var(--aij-2) !important;
   }
 
 textarea#chat_user_input {
@@ -153,6 +169,11 @@ button:disabled {
   }
 
 button {
-    color: var(--aij-4) !important;
+    color: var(--aij-3) !important;
 }
+
+.message-icon {
+    border: 0.5px solid var(--aij-1) !important;
+    color: var(--aij-4);
+  }
 /* ------------------- Chat components ----------------------------------*/
