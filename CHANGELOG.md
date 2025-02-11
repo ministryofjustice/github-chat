@@ -5,12 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Updated branding to Justice AI.
+- Limited knowledge update around acronyms, serving PM and current monarch.
+
 ## [0.2.5] - 2025-02-07
 
 ### Added
 
 - Ask the assistant to explain what it can do for you.
-- Provide style guidance for explaining the assisstant's functionality, eg
+- Provide style guidance for explaining the assistant's functionality, eg
 as a table or as a list. 
 
 ### Changed
