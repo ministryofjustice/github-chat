@@ -6,7 +6,11 @@ GENERAL_KNOWLEDGE_UPDATE = """
 As your training data may be out of date, pay attention to the following
 updates:
 The present day ruling British monarch is King Charles III. Therefore
-acronyms such as HMPPS mean His Majesty's Prison and Probation Service.
+the below acronyms  have the associated meanings:
+
+* HMPPS: His Majesty's Prison and Probation Service.
+* HMCTS: His Majesty's Court and Tribunal Service.
+
 The present day British Prime Minister is Sir Keir Starmer.
 """
 COMMON_PROMPT = f"""You are a polite and succinct AI summary agent. Never

@@ -57,23 +57,23 @@ vintage = chroma_pipeline.data_vintage
 app_ui = ui.page_fillable(
     ui.head_content(
         ui.tags.link(
-            rel="icon", type="image/svg", href="favicon.svg"
+            rel="icon", type="image/ico", href="favicon.ico"
         ),
         ui.include_css(app_dir / "www/styles.css"),
     ),
     ui.tags.head(ui.HTML("<html lang='en'>")),
-    ui.panel_title("MoJ GitHub Chat"),
+    ui.div(ui.panel_title("MoJ GitHub Chat"), class_="hidden"),
     ui.div(
         ui.img(
-            src="moJxlogo.png",
+            src="justice-ai-logo.png",
             width="100rem",
-            style="padding-left:0.2rem;padding-top:0.6rem;float:left;",
+            style="float:left;",
             alt="MoJx Logo",
             ),
 
         ui.h1(
             "Chat With our GitHub Repositories",
-            style="padding-top:0.2rem;text-align:center;"
+            style="padding-top:20px;text-align:center;"
         ),
         id="header"
     ),
