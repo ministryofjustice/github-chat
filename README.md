@@ -34,7 +34,7 @@ The development version of the app lives at https://richleysh84.shinyapps.io/moj
 
 ### Agentic RAG
 
-![Agentic RAG Overview](./docs/process/moj-github-chat.png)
+![Agentic RAG Overview](./docs/process/github-chat.png)
 
 This application uses
 [structured model output](https://openai.com/index/introducing-structured-outputs-in-the-api/)
