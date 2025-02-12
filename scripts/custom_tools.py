@@ -76,14 +76,29 @@ class ExplainTools(BaseModel):
     toolbox_manual: str
 
 
+class WipeChat(BaseModel):
+    """Initialise the chat interface and discard any cached results.
+
+    Attributes
+    ----------
+    use_tool: bool
+        Should the WipeChat tool be used.
+
+        
+    """
+    use_tool: bool
+
+
 toolbox = [
     pydantic_function_tool(ShouldExtractKeywords),
     pydantic_function_tool(ShouldExplainTools),
     pydantic_function_tool(ExportDataToTSV),
+    pydantic_function_tool(WipeChat),
 ] # these tools are available to the orchestrator agent
 
 toolbox_manual_members = [
     ExtractKeywordEntities,
     ExportDataToTSV,
     ExplainTools,
+    WipeChat,
 ] # these tools will be included in any tool explanations required
