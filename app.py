@@ -235,13 +235,13 @@ def server(input, output, session):
 
             elif (tool_call := resp.message.tool_calls):
                 function_name = tool_call[0].function.name
-                arguments = tool_call[0].function.arguments
+                args = json.loads(tool_call[0].function.arguments)
                 sanitised_func_nm = sanitise_string(function_name)
 
                 if sanitised_func_nm == "ShouldExtractKeywords":
                     # pydantic defence
                     extract_this = ShouldExtractKeywords(
-                        use_tool=json.loads(arguments)["use_tool"],
+                        use_tool=args["use_tool"],
                         )
                     # start a new extraction stream
                     _init_stream(
@@ -318,7 +318,7 @@ def server(input, output, session):
                         stream.append(meta_resp)
 
                 elif sanitised_func_nm == "ExportDataToTSV":
-                    should_export = json.loads(arguments)["export"]
+                    should_export = args["export"]
                     if should_export:
                         dat = chroma_pipeline.export_table
                         if len(dat) == 0:
@@ -334,7 +334,6 @@ def server(input, output, session):
                             await chat.append_message(EXPORT_MSG)
 
                 elif sanitised_func_nm == "WipeChat":
-                    args = json.loads(arguments)
                     ui.notification_show(
                         "Resetting chat & discarding results"
                         )
@@ -346,7 +345,6 @@ def server(input, output, session):
                     await chat.append_message(stream[-1])
                     
                 elif sanitised_func_nm == "ShouldExplainTools":
-                    args = json.loads(arguments)
                     style_guide = args["style_guidance"]
                     ui.notification_show(
                         f"Asking for tool explanation with style guidance: {style_guide}"
