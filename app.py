@@ -22,6 +22,7 @@ from scripts.custom_tools import (
     ShouldExplainTools,
     ShouldExtractKeywords,
     toolbox,
+    WipeChat,
     )
 from scripts.icons import question_circle
 from scripts.moderations import check_moderation
@@ -332,6 +333,18 @@ def server(input, output, session):
                                 )
                             await chat.append_message(EXPORT_MSG)
 
+                elif sanitised_func_nm == "WipeChat":
+                    args = json.loads(arguments)
+                    ui.notification_show(
+                        "Resetting chat & discarding results"
+                        )
+                    # pydantic defence
+                    WipeChat(use_tool=args["use_tool"])
+                    reset_chat()
+                    wipe_export_table()
+                    await chat.clear_messages()
+                    await chat.append_message(stream[-1])
+                    
                 elif sanitised_func_nm == "ShouldExplainTools":
                     args = json.loads(arguments)
                     style_guide = args["style_guidance"]
@@ -375,6 +388,7 @@ def server(input, output, session):
                         }
                     await chat.append_message(toolbox_manual)
                     stream.append(toolbox_manual)
+
 
 
     def reset_chat():
