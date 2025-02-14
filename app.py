@@ -3,7 +3,7 @@ import io
 import json
 import logging
 from pathlib import Path
-from webbrowser import open_new
+import urllib.parse
 
 import dotenv
 import openai
@@ -410,7 +410,6 @@ def server(input, output, session):
                         draft_prompt = DRAFT_EMAIL_PROMPT.format(
                             chat_log=stream[2:] # ignore sys & wlcm prompts
                             )
-                        print(f"DRAFT PROMPT: {draft_prompt}")
                         draft_email_stream.append(
                             {"role": "user", "content": draft_prompt}
                             )
@@ -431,22 +430,26 @@ def server(input, output, session):
                         draft_email_resp = openai_client.chat.completions.create(
                             **draft_email_params
                         )
-                        print(draft_email_resp)
                         args = json.loads(
                             draft_email_resp.choices[0].message.tool_calls[0].function.arguments
                             )
                         draft_email = DraftEmail(
-                            subject = args["subject"],
-                            body = args["body"]
+                            subject = urllib.parse.quote(args["subject"]),
+                            body = urllib.parse.quote(args["body"]),
                         )
-                        payload = EMAIL_TEMPLATE.format(
+                        href = EMAIL_TEMPLATE.format(
                             subject=draft_email.subject,
                             body=draft_email.body
                             )
-                        # Open the URL in a new browser window, note that
-                        # presenting this link in chat UI is incorrectly
-                        # formatted, even when url-encoded.
-                        open_new(payload)
+                        link = ui.tags.a(
+                            "Click to launch your default Email app.",
+                            {"href": href, "target": "_blank"}
+                            )
+                        _modal = ui.modal(  
+                            link, 
+                            title="Here is your draft Email.",  
+                            easy_close=True,  
+                        )
                         await chat.append_message(EMAIL_COMPLETION_MSG)
                         stream.append(
                             {
@@ -454,6 +457,12 @@ def server(input, output, session):
                                 "content": EMAIL_COMPLETION_MSG
                             }
                         )
+                        # Open the URL in a modal window, note that
+                        # presenting this link in chat UI is incorrectly
+                        # formatted, even when url-encoded. Also tried
+                        # webbrowser.open_new but is server-side only and
+                        # will not work when hosted.
+                        ui.modal_show(_modal)
 
 
     def reset_chat():

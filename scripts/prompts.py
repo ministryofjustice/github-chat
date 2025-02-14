@@ -178,19 +178,20 @@ You will be provided with the last few messages from the chat stream, in
 which the User has indicated that they would like to send an Email. Your
 job is to extract the reason the user wishes to send an Email from the chat
 and to use this to draft an Email subject and body. Use the DraftEmail tool
-for this purpose.
+for this purpose. Ensure that the Email body is formatted with linebreaks.
 """.replace("\n", " ").replace("  ", "")
 
 
 DRAFT_EMAIL_PROMPT = """
-The last 4 messages of my chat log are included below in triple
-backtick delimiters. Use this to prepare a draft Email for me:
+My chat log is included below in triple backtick delimiters. Use this to
+prepare a draft Email for me. Ensure the Email is formatted with newlines
+to create adequate visual separation.:
 
 {chat_log}
 """.replace("\n", " ").replace("  ", "")
 
 EMAIL_TEMPLATE = "mailto:research-and-development@justice.gov.uk?subject=GitHub Chat Enquiry: {subject}&body={body}"
-EMAIL_COMPLETION_MSG = "A new browser window has been opened with your draft Email."
+EMAIL_COMPLETION_MSG = "A new window has been opened with your draft Email."
 
 # chat utilities ----------------------------------------------------------
 
