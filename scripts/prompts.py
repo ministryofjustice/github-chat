@@ -190,7 +190,7 @@ to create adequate visual separation.:
 {chat_log}
 """.replace("\n", " ").replace("  ", "")
 
-EMAIL_TEMPLATE = "mailto:research-and-development@justice.gov.uk?subject=GitHub Chat Enquiry: {subject}&body={body}"
+EMAIL_TEMPLATE = "mailto:richard.leyshon@justice.gov.uk?subject=GitHub Chat Enquiry: {subject}&body={body}"
 EMAIL_COMPLETION_MSG = "A new window has been opened with your draft Email."
 
 # chat utilities ----------------------------------------------------------
