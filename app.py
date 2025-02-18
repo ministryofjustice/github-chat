@@ -3,6 +3,7 @@ import io
 import json
 import logging
 from pathlib import Path
+import urllib.parse
 
 import dotenv
 import openai
@@ -16,9 +17,11 @@ from scripts.custom_components import (
     feedback_tab, more_info_tab, inputs_with_popovers
 )
 from scripts.custom_tools import (
+    DraftEmail,
     ExplainTools,
     ExportDataToTSV,
     ExtractKeywordEntities,
+    ShouldDraftEmail,
     ShouldExplainTools,
     ShouldExtractKeywords,
     toolbox,
@@ -27,6 +30,10 @@ from scripts.custom_tools import (
 from scripts.icons import question_circle
 from scripts.moderations import check_moderation
 from scripts.prompts import (
+    DRAFT_EMAIL_PROMPT,
+    EMAIL_COMPLETION_MSG,
+    EMAIL_SYS_PROMPT,
+    EMAIL_TEMPLATE,
     EXTRACTION_SYS_PROMPT,
     EXPORT_FILENM,
     EXPORT_MSG,
@@ -46,6 +53,7 @@ logging.basicConfig(
 stream = [] # Orchestrator stream                  
 extraction_stream = [] # Keyword extraction stream
 tool_explainer_stream = []
+draft_email_stream = []
 _init_stream(_stream=stream)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
@@ -387,6 +395,74 @@ def server(input, output, session):
                     await chat.append_message(toolbox_manual)
                     stream.append(toolbox_manual)
 
+                elif sanitised_func_nm == "ShouldDraftEmail":
+                    # pydantic defence
+                    should_draft_email = ShouldDraftEmail(
+                        use_tool=args["use_tool"],
+                        )
+                    if should_draft_email:
+                        ui.notification_show("Drafting your Email.")
+                        _init_stream(
+                            _stream=draft_email_stream,
+                            sys=EMAIL_SYS_PROMPT,
+                            wlcm=None
+                        )
+                        draft_prompt = DRAFT_EMAIL_PROMPT.format(
+                            chat_log=stream[2:] # ignore sys & wlcm prompts
+                            )
+                        draft_email_stream.append(
+                            {"role": "user", "content": draft_prompt}
+                            )
+                        draft_email_params = {
+                            "model": APP_LLM,
+                            "messages": draft_email_stream,
+                            "stream": False,
+                            "max_completion_tokens": input.max_tokens(),
+                            "presence_penalty": input.pres_pen(),
+                            "frequency_penalty": input.freq_pen(),
+                            "temperature": input.temp(),
+                            "tools": [
+                                openai.pydantic_function_tool(
+                                    DraftEmail
+                                    ),
+                                ],
+                        }
+                        draft_email_resp = openai_client.chat.completions.create(
+                            **draft_email_params
+                        )
+                        args = json.loads(
+                            draft_email_resp.choices[0].message.tool_calls[0].function.arguments
+                            )
+                        draft_email = DraftEmail(
+                            subject = urllib.parse.quote(args["subject"]),
+                            body = urllib.parse.quote(args["body"]),
+                        )
+                        href = EMAIL_TEMPLATE.format(
+                            subject=draft_email.subject,
+                            body=draft_email.body
+                            )
+                        link = ui.tags.a(
+                            "Click to launch your default Email app.",
+                            {"href": href, "target": "_blank"}
+                            )
+                        _modal = ui.modal(  
+                            link, 
+                            title="Here is your draft Email.",  
+                            easy_close=True,  
+                        )
+                        await chat.append_message(EMAIL_COMPLETION_MSG)
+                        stream.append(
+                            {
+                                "role": "assistant",
+                                "content": EMAIL_COMPLETION_MSG
+                            }
+                        )
+                        # Open the URL in a modal window, note that
+                        # presenting this link in chat UI is incorrectly
+                        # formatted, even when url-encoded. Also tried
+                        # webbrowser.open_new but is server-side only and
+                        # will not work when hosted.
+                        ui.modal_show(_modal)
 
 
     def reset_chat():
