@@ -1,5 +1,5 @@
 """Store schemas for defining structured model outputs here."""
-from typing import List
+from typing import List, Union
 
 from openai import pydantic_function_tool
 from pydantic import BaseModel
@@ -119,12 +119,35 @@ class DraftEmail(BaseModel):
     body: str
 
 
+
+class GetRepoCommits(BaseModel):
+    """Request the commits for a repo with an optional time window.
+
+    This tool can be used to return that repository's commit history,
+    including authors, dates and messages. The repo's HTML URL is required,
+    which can either be provided by the user or inferred from the results
+    produced by querying the vector store.
+
+    Attributes
+    ----------
+    html_url:
+        The URL of the GitHub repository.
+    n_days:
+        The number of days used to filter the commit results. If None, all
+        commits will be returned.
+
+    """
+    html_url: str
+    n_days: Union[int, None]
+
+
 toolbox = [
     pydantic_function_tool(ShouldExtractKeywords),
     pydantic_function_tool(ShouldExplainTools),
     pydantic_function_tool(ShouldDraftEmail),
     pydantic_function_tool(ExportDataToTSV),
     pydantic_function_tool(WipeChat),
+    pydantic_function_tool(GetRepoCommits),
 ] # these tools are available to the orchestrator agent
 
 toolbox_manual_members = [
@@ -133,4 +156,5 @@ toolbox_manual_members = [
     ExplainTools,
     WipeChat,
     DraftEmail,
+    GetRepoCommits,
 ] # these tools will be included in any tool explanations required
