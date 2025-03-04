@@ -89,10 +89,7 @@ tool. If the User has not indicated a number of days to ingest commits for,
 then use a value of 30 days. Otherwise, use the time window suggested by
 the user in days. The User may wish to consider commit activity from
 several years ago. If the User requests this, then pass None to the n_days
-argument to return all of the available commits. If the User asks for a
-progress update from several repos, politely inform them that this feature
-is only available for one repo at a time and to specify which repo to
-analyse.
+argument to return all of the available commits.
 """.replace("\n", " ").replace("  ", "")
 
 # entity extraction agent -------------------------------------------------
