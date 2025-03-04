@@ -81,6 +81,18 @@ Email if the User has not clarified why they are Emailing. Use the
 ShouldDraftEmail tool to start the drafting logic. If the user indicates
 their intended Email is clearly irrelevant to the application, politely
 decline.
+
+If the User is interested in activity in a specified repo, then use the
+tool GetRepoCommits. Ensure that the exact HTML URL of the repo is known to
+you before proceeding, as this is required for the correct execution of the
+tool. If the User has not indicated a number of days to ingest commits for,
+then use a value of 30 days. Otherwise, use the time window suggested by
+the user in days. The User may wish to consider commit activity from
+several years ago. If the User requests this, then pass None to the n_days
+argument to return all of the available commits. If the User asks for a
+progress update from several repos, politely inform them that this feature
+is only available for one repo at a time and to specify which repo to
+analyse.
 """.replace("\n", " ").replace("  ", "")
 
 # entity extraction agent -------------------------------------------------
@@ -192,6 +204,27 @@ to create adequate visual separation.:
 
 EMAIL_TEMPLATE = "mailto:richard.leyshon@justice.gov.uk?subject=GitHub Chat Enquiry: {subject}&body={body}"
 EMAIL_COMPLETION_MSG = "A new window has been opened with your draft Email."
+
+# Summarise Commits agent -------------------------------------------------
+
+COMMITS_SYS_PROMPT = f"""
+{COMMON_PROMPT} You are tasked with summarising the commit activity in a
+specific GitHub code repository. You will be provided with commit metadata.
+You must return an informative summary of the activity in this repository,
+ensuring that your response is accessible to a User who is not familiar
+with the context of the repo. Format your response with an overall summary
+of activity and a list with headings for the author names, dates and
+purpose of the change. Infer the purpose of the change from the commit
+message. Provide the url to the specific commits and a single line summary
+of each commit.
+""".replace("\n", " ").replace("  ", "")
+
+COMMIT_PROMPT = """
+The commit details returned from the GitHub developer API for the {repo_nm}
+repository follow in triple backtick delimeters. Please summarise these
+details for me:
+```{commit_deets}```
+""".replace("\n", " ").replace("  ", "")
 
 # chat utilities ----------------------------------------------------------
 
