@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import urllib.parse
 
+from ai_nexus_backend.github_api import GithubClient
 import dotenv
 import openai
 from pyprojroot import here
@@ -21,6 +22,7 @@ from scripts.custom_tools import (
     ExplainTools,
     ExportDataToTSV,
     ExtractKeywordEntities,
+    GetRepoCommits,
     ShouldDraftEmail,
     ShouldExplainTools,
     ShouldExtractKeywords,
@@ -30,6 +32,8 @@ from scripts.custom_tools import (
 from scripts.icons import question_circle
 from scripts.moderations import check_moderation
 from scripts.prompts import (
+    COMMIT_PROMPT,
+    COMMITS_SYS_PROMPT,
     DRAFT_EMAIL_PROMPT,
     EMAIL_COMPLETION_MSG,
     EMAIL_SYS_PROMPT,
@@ -54,6 +58,7 @@ stream = [] # Orchestrator stream
 extraction_stream = [] # Keyword extraction stream
 tool_explainer_stream = []
 draft_email_stream = []
+commit_stream = [] # for summarising repo commit activity
 _init_stream(_stream=stream)
 
 openai_client = openai.OpenAI(api_key=secrets["OPENAI_KEY"])
@@ -463,6 +468,80 @@ def server(input, output, session):
                         # webbrowser.open_new but is server-side only and
                         # will not work when hosted.
                         ui.modal_show(_modal)
+
+                elif sanitised_func_nm == "GetRepoCommits":
+                    # pydantic defence
+                    get_repo_commits = GetRepoCommits(
+                        html_url=args["html_url"],
+                        n_days=args["n_days"],
+                        )
+                    ui.notification_show(
+                        f"Retrieving commits for {get_repo_commits.html_url} for last {get_repo_commits.n_days} days"
+                        )
+                    get_repo_commits = GetRepoCommits(
+                        html_url=args["html_url"], n_days=args["n_days"]
+                        )
+                    # instantiate github client
+                    github_client = GithubClient(
+                        github_pat=secrets["GITHUB_PAT"],
+                        user_agent=secrets["AGENT"],
+                        )
+                    commits = github_client.get_commits_for_html_url(
+                        html_url=get_repo_commits.html_url,
+                        timedelta_cutoff_days=get_repo_commits.n_days,
+                        )
+                    if len(commits[0]) == 0:
+                        await chat.append_message(
+                            {
+                                "role": "assistant",
+                                "content": "No commits found, try asking for older commits."
+                                }
+                            )
+                    else:
+                        _init_stream(
+                            _stream=commit_stream,
+                            sys=COMMITS_SYS_PROMPT,
+                            wlcm=None
+                            )
+                        # extract relevant commit content for each commit:
+                        commit_extracts = []
+                        for commit in commits[0]:
+                            commit_extract = {
+                                commit["html_url"]: {
+                                    "author": commit["commit"]["author"]["name"],
+                                    "date": commit["commit"]["author"]["date"],
+                                    "message": commit["commit"]["message"],
+                                    "url": commit["html_url"],
+                                    }
+                                }
+                            commit_extracts.append(commit_extract)
+                        
+                        commit_prompt = COMMIT_PROMPT.format(
+                            repo_nm=get_repo_commits.html_url,
+                            commit_deets=str(commit_extracts)
+                            )
+                        commit_stream.append(
+                            {"role": "user", "content": commit_prompt}
+                            )
+
+                        commit_summary_params = {
+                            "model": APP_LLM,
+                            "messages": commit_stream,
+                            "stream": False,
+                            "max_completion_tokens": input.max_tokens(),
+                            "presence_penalty": input.pres_pen(),
+                            "frequency_penalty": input.freq_pen(),
+                            "temperature": input.temp(),
+                        }
+                        commit_summary_resp = openai_client.chat.completions.create(
+                            **commit_summary_params
+                        )
+                        progress_update = {
+                            "role": "assistant",
+                            "content": commit_summary_resp.choices[0].message.content,
+                            }
+                        await chat.append_message(progress_update)
+                        stream.append(progress_update)
 
 
     def reset_chat():
