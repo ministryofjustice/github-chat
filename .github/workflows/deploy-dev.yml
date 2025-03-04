@@ -21,11 +21,14 @@ jobs:
           rm -r ./tmp-dat
         env:
           REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }} # GitHub PAT
+          # CICD secrets cannot start with "GITHUB_*"
       - name: Create app .env file
         run : |
           touch .env
           echo OPENAI_KEY=${{ secrets.OPENAI_KEY }} >> .env
-          echo NOMIC_KEY=${{ secrets.NOMIC_KEY }} >> .env        
+          echo NOMIC_KEY=${{ secrets.NOMIC_KEY }} >> .env       
+          echo GITHUB_PAT=${{  secrets.PAT_GITHUB  }} >> .env
+          echo AGENT=${{  vars.DEV_APP_AGENT  }} >> .env
       - name: Configure rsconnect
         run: |
           rsconnect add --account ${{ vars.SHINYAPPS_USERNAME }} --name rsconnect-server --token ${{ secrets.SHINYAPPS_TOKEN }} --secret ${{ secrets.SHINYAPPS_SECRET }}
